@@ -1,0 +1,256 @@
+{
+  "id": "com.applemusic.source",
+  "name": "Apple Music",
+  "versionCode": 1,
+  "versionName": "0.1.0",
+  "author": "Replica0110",
+  "description": "Apple 搜索源插件",
+  "apiVersion": 1,
+  "includeDirs": [
+    "lib"
+  ],
+  "entry": "source.js",
+  "capabilities": [
+    "searchSongs",
+    "getLyrics",
+    "searchCovers"
+  ],
+  "requiredHostApis": [
+    "app.userAgent",
+    "runtime.info",
+    "http.getText",
+    "http.postText",
+    "http.get",
+    "http.post"
+  ],
+  "configFields": [
+    {
+      "key": "lyrics_provider",
+      "title": "歌词源",
+      "summary": "选择第三方歌词接口或 Apple 官方接口",
+      "group": "歌词",
+      "type": "dropdown",
+      "required": true,
+      "defaultValue": "third_party",
+      "options": [
+        {
+          "value": "third_party",
+          "label": "第三方"
+        },
+        {
+          "value": "official",
+          "label": "官方"
+        }
+      ]
+    },
+    {
+      "key": "token",
+      "title": "Token",
+      "summary": "使用 Apple 官方歌词源时必填",
+      "group": "歌词",
+      "type": "password",
+      "required": true,
+      "defaultValue": "",
+      "dependency": {
+        "type": "match",
+        "key": "lyrics_provider",
+        "value": "official"
+      }
+    },
+    {
+      "key": "region",
+      "title": "地区",
+      "summary": "用于 Apple Music 请求的语言/地区参数",
+      "group": "请求",
+      "type": "dropdown",
+      "required": true,
+      "defaultValue": "zh-CN",
+      "options": [
+        {
+          "value": "zh-CN",
+          "label": "zh-CN"
+        },
+        {
+          "value": "en-US",
+          "label": "en-US"
+        },
+        {
+          "value": "ja-JP",
+          "label": "ja-JP"
+        },
+        {
+          "value": "ko-KR",
+          "label": "ko-KR"
+        }
+      ]
+    },
+    {
+      "key": "cover_size",
+      "title": "封面大小",
+      "summary": "Apple Music 封面图片尺寸",
+      "group": "封面",
+      "type": "dropdown",
+      "required": true,
+      "defaultValue": "3000",
+      "options": [
+        {
+          "value": "500",
+          "label": "500 x 500"
+        },
+        {
+          "value": "1000",
+          "label": "1000 x 1000"
+        },
+        {
+          "value": "3000",
+          "label": "3000 x 3000"
+        }
+      ]
+    }
+  ],
+  "metadataFields": [
+    {
+      "key": "title",
+      "title": "Title",
+      "summary": "Song title",
+      "group": "basic",
+      "type": "text",
+      "writeable": true,
+      "internal": false,
+      "defaultTarget": "TITLE",
+      "defaultMode": "OVERWRITE"
+    },
+    {
+      "key": "artist",
+      "title": "Artist",
+      "summary": "Song artist",
+      "group": "basic",
+      "type": "text",
+      "writeable": true,
+      "internal": false,
+      "defaultTarget": "ARTIST",
+      "defaultMode": "OVERWRITE"
+    },
+    {
+      "key": "album",
+      "title": "Album",
+      "summary": "Album name",
+      "group": "basic",
+      "type": "text",
+      "writeable": true,
+      "internal": false,
+      "defaultTarget": "ALBUM",
+      "defaultMode": "OVERWRITE"
+    },
+    {
+      "key": "date",
+      "title": "Date",
+      "summary": "Release date",
+      "group": "basic",
+      "type": "date",
+      "writeable": true,
+      "internal": false,
+      "defaultTarget": "DATE",
+      "defaultMode": "SUPPLEMENT"
+    },
+    {
+      "key": "track_number",
+      "title": "Track Number",
+      "summary": "Track number",
+      "group": "basic",
+      "type": "number",
+      "writeable": true,
+      "internal": false,
+      "defaultTarget": "TRACK_NUMBER",
+      "defaultMode": "SUPPLEMENT"
+    },
+    {
+      "key": "disc_number",
+      "title": "Disc Number",
+      "summary": "Disc number",
+      "group": "basic",
+      "type": "number",
+      "writeable": true,
+      "internal": false,
+      "defaultTarget": "DISC_NUMBER",
+      "defaultMode": "SUPPLEMENT"
+    },
+    {
+      "key": "cover_url",
+      "title": "Cover",
+      "summary": "Cover image URL",
+      "group": "media",
+      "type": "url",
+      "writeable": true,
+      "internal": false,
+      "defaultTarget": "COVER",
+      "defaultMode": "SUPPLEMENT"
+    },
+    {
+      "key": "composer",
+      "title": "Composer",
+      "summary": "Composer",
+      "group": "credits",
+      "type": "text",
+      "writeable": true,
+      "internal": false,
+      "defaultTarget": "COMPOSER",
+      "defaultMode": "SUPPLEMENT"
+    },
+    {
+      "key": "lyricist",
+      "title": "Lyricist",
+      "summary": "Lyricist",
+      "group": "credits",
+      "type": "text",
+      "writeable": true,
+      "internal": false,
+      "defaultTarget": "LYRICIST",
+      "defaultMode": "SUPPLEMENT"
+    },
+    {
+      "key": "genre",
+      "title": "Genre",
+      "summary": "Genre",
+      "group": "extended",
+      "type": "text",
+      "writeable": true,
+      "internal": false,
+      "defaultTarget": "GENRE",
+      "defaultMode": "SUPPLEMENT"
+    },
+    {
+      "key": "apple_id",
+      "title": "Apple ID",
+      "summary": "Internal Apple Music track ID",
+      "group": "internal",
+      "type": "text",
+      "writeable": false,
+      "internal": true,
+      "defaultTarget": "CUSTOM",
+      "defaultMode": "DISABLED"
+    },
+    {
+      "key": "album_id",
+      "title": "Apple Album ID",
+      "summary": "Internal Apple Music album ID",
+      "group": "internal",
+      "type": "text",
+      "writeable": false,
+      "internal": true,
+      "defaultTarget": "CUSTOM",
+      "defaultMode": "DISABLED"
+    },
+    {
+      "key": "play_params_id",
+      "title": "Apple Play Params ID",
+      "summary": "Internal Apple Music play params ID",
+      "group": "internal",
+      "type": "text",
+      "writeable": false,
+      "internal": true,
+      "defaultTarget": "CUSTOM",
+      "defaultMode": "DISABLED"
+    }
+  ]
+}
