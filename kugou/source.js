@@ -80,7 +80,7 @@ function getLyrics(request) {
   if (!contentResp || !contentResp.content) return null;
 
   const lyricText = Number(contentResp.contenttype || 0) === 2
-    ? Lyrico.base64.decodeText(contentResp.content)
+    ? Platform.base64.decodeText(contentResp.content)
     : decryptKrc(contentResp.content);
   const parsed = parseKrc(lyricText);
   parsed.tags.ti = parsed.tags.ti || song.title || "";

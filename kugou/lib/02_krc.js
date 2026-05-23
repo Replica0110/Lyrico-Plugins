@@ -1,13 +1,13 @@
 function decryptKrc(base64Content) {
-  const bodyBase64 = Lyrico.base64.dropBytes(base64Content || "", 4);
-  const decodedBase64 = Lyrico.bytes.xorBase64(bodyBase64, KRC_KEY);
-  return Lyrico.compression.inflateBase64ToText(decodedBase64);
+  const bodyBase64 = Platform.base64.dropBytes(base64Content || "", 4);
+  const decodedBase64 = Platform.bytes.xorBase64(bodyBase64, KRC_KEY);
+  return Platform.compression.inflateBase64ToText(decodedBase64);
 }
 
 function parseLanguageTag(tag) {
   if (!tag) return [];
   try {
-    const root = JSON.parse(Lyrico.base64.decodeText(tag));
+    const root = JSON.parse(Platform.base64.decodeText(tag));
     return Array.isArray(root.content) ? root.content : [];
   } catch (e) {
     return [];

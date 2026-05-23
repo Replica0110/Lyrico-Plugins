@@ -1,6 +1,6 @@
 const SALT = "LnT6xpN3khm36zse0QzvmgTZ3waWdRSA";
 const KRC_KEY = [64, 71, 97, 119, 94, 50, 116, 71, 81, 54, 49, 45, 206, 210, 110, 105];
-const DEVICE_MID = Lyrico.crypto.md5(String(Date.now()));
+const DEVICE_MID = Platform.crypto.md5(String(Date.now()));
 
 function buildQuery(params) {
   return Object.keys(params)
@@ -30,12 +30,12 @@ function signParams(customParams, body, module) {
 
   Object.keys(customParams || {}).forEach(key => params[key] = customParams[key]);
   const sorted = Object.keys(params).sort().map(key => key + "=" + params[key]).join("");
-  params.signature = Lyrico.crypto.md5(SALT + sorted + (body || "") + SALT);
+  params.signature = Platform.crypto.md5(SALT + sorted + (body || "") + SALT);
   return params;
 }
 
 function getJson(url, headers) {
-  const text = Lyrico.http.getText(url, {
+  const text = Platform.http.getText(url, {
     headers: Object.assign({
       "User-Agent": "Android14-1070-11070-201-0-SearchSong-wifi"
     }, headers || {})

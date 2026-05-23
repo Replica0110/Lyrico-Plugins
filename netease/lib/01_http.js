@@ -353,7 +353,7 @@ function buildEapiParams(path, params, encryptPath, headerCookies) {
   const actualEncryptPath = encryptPath || path.replace("/eapi/", "/api/");
   const paramsText = JSON.stringify(finalParams);
 
-  const digest = Lyrico.crypto.md5(
+  const digest = Platform.crypto.md5(
     "nobody" + actualEncryptPath + "use" + paramsText + "md5forencrypt"
   );
 
@@ -364,20 +364,20 @@ function buildEapiParams(path, params, encryptPath, headerCookies) {
     "-36cd479b6b5-" +
     digest;
 
-  return Lyrico.crypto.aesEcbPkcs5EncryptHex(data, EAPI_KEY);
+  return Platform.crypto.aesEcbPkcs5EncryptHex(data, EAPI_KEY);
 }
 
 function decryptEapiResponseBase64(base64) {
   if (!base64) return "";
-  return Lyrico.crypto.aesEcbPkcs5DecryptBase64ToText(base64, EAPI_KEY);
+  return Platform.crypto.aesEcbPkcs5DecryptBase64ToText(base64, EAPI_KEY);
 }
 
 function eapiRequestRaw(path, params, options) {
   options = options || {};
 
-  if (!Lyrico.http || typeof Lyrico.http.postBytesResponse !== "function") {
+  if (!Platform.http || typeof Platform.http.postBytesResponse !== "function") {
     throw new Error(
-      "Host API missing: Lyrico.http.postBytesResponse. " +
+      "Host API missing: Platform.http.postBytesResponse. " +
         "Update QuickJsRuntime.HOST_API_BOOTSTRAP and QuickJsHostApi."
     );
   }
@@ -393,7 +393,7 @@ function eapiRequestRaw(path, params, options) {
 
   const formBody = "params=" + encryptedHex;
 
-  const response = Lyrico.http.postBytesResponse(
+  const response = Platform.http.postBytesResponse(
     "https://interface.music.163.com" + path,
     formBody,
     {
@@ -495,7 +495,7 @@ function ensureNeInit() {
 
   neInitialized = true;
 
-  Lyrico.log.debug(
+  Platform.log.debug(
     "NE",
     "Anonymous login ok, userId=" +
       String(root.userId || "") +
@@ -507,7 +507,7 @@ function eapiRequest(path, params, encryptPath) {
   try {
     ensureNeInit();
   } catch (e) {
-    Lyrico.log.warn(
+    Platform.log.warn(
       "NE",
       "Anonymous login failed, continue with current cookies: " +
         String(e && e.message ? e.message : e)
@@ -551,7 +551,7 @@ function postForm(url, params) {
     })
     .join("&");
 
-  const text = Lyrico.http.postText(url, body, {
+  const text = Platform.http.postText(url, body, {
     contentType: "application/x-www-form-urlencoded; charset=utf-8",
     headers: {
       "User-Agent": USER_AGENT,
@@ -563,7 +563,7 @@ function postForm(url, params) {
 }
 
 function getJson(url) {
-  const text = Lyrico.http.getText(url, {
+  const text = Platform.http.getText(url, {
     headers: {
       "User-Agent": USER_AGENT,
       "Referer": "https://music.163.com/"

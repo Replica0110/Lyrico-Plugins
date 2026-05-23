@@ -4,28 +4,26 @@
   "versionCode": 1,
   "versionName": "0.1.0",
   "author": "Replica0110",
-  "description": "网易云搜索插件",
+  "description": "网易云搜索源插件",
   "apiVersion": 1,
-  "includeDirs": [
-    "lib"
-  ],
+  "includeDirs": ["lib"],
   "entry": "source.js",
   "capabilities": ["searchSongs", "getLyrics", "searchCovers"],
   "requiredHostApis": [
-    "http.getText", 
-    "http.postText", 
+    "http.getText",
+    "http.postText",
     "crypto.aesEcbPkcs5EncryptHex",
     "crypto.aesEcbPkcs5EncryptBase64",
     "crypto.aesEcbPkcs5DecryptBase64ToText"
   ],
   "metadataFields": [
-    { "key": "title", "title": "Title", "group": "basic", "writeable": true, "defaultTarget": "TITLE", "defaultMode": "OVERWRITE" },
-    { "key": "artist", "title": "Artist", "group": "basic", "writeable": true, "defaultTarget": "ARTIST", "defaultMode": "OVERWRITE" },
-    { "key": "album", "title": "Album", "group": "basic", "writeable": true, "defaultTarget": "ALBUM", "defaultMode": "OVERWRITE" },
-    { "key": "date", "title": "Date", "group": "basic", "writeable": true, "defaultTarget": "DATE", "defaultMode": "SUPPLEMENT" },
-    { "key": "track_number", "title": "Track Number", "group": "basic", "writeable": true, "defaultTarget": "TRACK_NUMBER", "defaultMode": "SUPPLEMENT" },
-    { "key": "cover_url", "title": "Cover", "group": "media", "writeable": true, "defaultTarget": "COVER", "defaultMode": "SUPPLEMENT" },
-    { "key": "netease_163_key", "title": "Netease 163 Key", "group": "internal", "writeable": true, "defaultTarget": "COMMENT", "defaultMode": "DISABLED" },
-    { "key": "subtitle", "title": "Subtitle", "group": "extended", "writeable": true, "defaultTarget": "SUBTITLE", "defaultMode": "DISABLED", "targetOptions": ["SUBTITLE", "COMMENT"] }
+    { "key": "title", "title": "歌曲标题", "group": "基本信息", "writeable": true, "defaultTarget": "TITLE", "defaultMode": "OVERWRITE" },
+    { "key": "artist", "title": "艺术家", "group": "基本信息", "writeable": true, "defaultTarget": "ARTIST", "defaultMode": "OVERWRITE" },
+    { "key": "album", "title": "专辑名", "group": "基本信息", "writeable": true, "defaultTarget": "ALBUM", "defaultMode": "OVERWRITE" },
+    { "key": "date", "title": "发行日期", "group": "基本信息", "writeable": true, "defaultTarget": "DATE", "defaultMode": "SUPPLEMENT" },
+    { "key": "track_number", "title": "音轨号", "group": "基本信息", "writeable": true, "defaultTarget": "TRACK_NUMBER", "defaultMode": "SUPPLEMENT" },
+    { "key": "cover_url", "title": "封面图片", "group": "媒体", "writeable": true, "defaultTarget": "COVER", "defaultMode": "SUPPLEMENT" },
+    { "key": "netease_163_key", "title": "网易163 Key", "group": "内部", "writeable": true, "defaultTarget": "COMMENT", "defaultMode": "DISABLED" },
+    { "key": "subtitle", "title": "副标题", "group": "扩展", "writeable": true, "defaultTarget": "COMMENT", "defaultMode": "DISABLED" }
   ]
 }

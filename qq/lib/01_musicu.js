@@ -18,7 +18,7 @@ function postMusicu(module, method, param) {
       param: param
     }
   });
-  const text = Lyrico.http.postText(QQ_MUSICU_API_URL, body, {
+  const text = Platform.http.postText(QQ_MUSICU_API_URL, body, {
     contentType: "application/json; charset=utf-8",
     headers: { "User-Agent": "Mozilla/5.0" }
   });

@@ -9,14 +9,14 @@ let cachedLyricoUserAgent = "";
 const APPLE_LOG_TAG = "AppleSourcePlugin";
 
 function logApple(message) {
-  if (Lyrico.log && Lyrico.log.debug) {
-    Lyrico.log.debug(APPLE_LOG_TAG, message);
+  if (Platform.log && Platform.log.debug) {
+    Platform.log.debug(APPLE_LOG_TAG, message);
   }
 }
 
 function warnApple(message) {
-  if (Lyrico.log && Lyrico.log.warn) {
-    Lyrico.log.warn(APPLE_LOG_TAG, message);
+  if (Platform.log && Platform.log.warn) {
+    Platform.log.warn(APPLE_LOG_TAG, message);
   }
 }
 
@@ -26,8 +26,8 @@ function getLyricoUserAgent() {
   }
 
   try {
-    if (Lyrico.app && Lyrico.app.getUserAgent) {
-      cachedLyricoUserAgent = String(Lyrico.app.getUserAgent() || "").trim();
+    if (Platform.app && Platform.app.getUserAgent) {
+      cachedLyricoUserAgent = String(Platform.app.getUserAgent() || "").trim();
     } else if (typeof app !== "undefined" && app.getUserAgent) {
       cachedLyricoUserAgent = String(app.getUserAgent() || "").trim();
     }
@@ -59,7 +59,7 @@ function storefront(region) {
 }
 
 function appleGet(url, token) {
-  return Lyrico.http.getText(url, {
+  return Platform.http.getText(url, {
     headers: {
       "Authorization": "Bearer " + token,
       "Origin": "https://music.apple.com",
@@ -78,7 +78,7 @@ function getToken(request) {
 
   if (cachedToken) return cachedToken;
 
-  const home = Lyrico.http.getText("https://beta.music.apple.com", {
+  const home = Platform.http.getText("https://beta.music.apple.com", {
     headers: {
       "User-Agent": WEB_USER_AGENT
     }
@@ -94,7 +94,7 @@ function getToken(request) {
 
   logApple("index js path=" + indexMatch[0]);
 
-  const js = Lyrico.http.getText("https://beta.music.apple.com" + indexMatch[0], {
+  const js = Platform.http.getText("https://beta.music.apple.com" + indexMatch[0], {
     headers: {
       "User-Agent": WEB_USER_AGENT
     }

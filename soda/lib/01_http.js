@@ -6,7 +6,7 @@ function buildQuery(params) {
 }
 
 function getJson(path, params) {
-  const text = Lyrico.http.getText(BASE_URL + path + "?" + buildQuery(params), {
+  const text = Platform.http.getText(BASE_URL + path + "?" + buildQuery(params), {
     headers: { "User-Agent": USER_AGENT }
   });
   return JSON.parse(text);

@@ -272,7 +272,7 @@ function hexToBytes(hexString) {
 function decryptQrc(rawHexString) {
   const bytes = hexToBytes(rawHexString);
   if (!bytes.length || bytes.length % 8 !== 0) return "";
-  return Lyrico.compression.inflateBytesToText(tripleDesDecrypt(bytes));
+  return Platform.compression.inflateBytesToText(tripleDesDecrypt(bytes));
 }
 
 function decodeXmlEntities(text) {
@@ -315,7 +315,7 @@ function parseQrc(text) {
 function decodeMaybeBase64(value) {
   if (!value) return "";
   try {
-    return Lyrico.base64.decodeText(String(value));
+    return Platform.base64.decodeText(String(value));
   } catch (e) {
     return String(value);
   }
@@ -336,9 +336,9 @@ function getLyrics(request) {
   if (!id) return null;
   const response = postMusicu("music.musichallSong.PlayLyricInfo", "GetPlayLyricInfo", {
     songID: id,
-    songName: Lyrico.base64.encodeText(song.title || ""),
-    albumName: Lyrico.base64.encodeText(song.album || ""),
-    singerName: Lyrico.base64.encodeText(song.artist || ""),
+    songName: Platform.base64.encodeText(song.title || ""),
+    albumName: Platform.base64.encodeText(song.album || ""),
+    singerName: Platform.base64.encodeText(song.artist || ""),
     crypt: 1,
     qrc: 1,
     trans: 1,

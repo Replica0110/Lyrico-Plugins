@@ -102,10 +102,10 @@ function build163Key(song) {
     const json = JSON.stringify(metadata).replace(/\//g, "\\/");
     return (
       "163 key(Don't modify):" +
-      Lyrico.crypto.aesEcbPkcs5EncryptBase64("music:" + json, AES_163_KEY)
+      Platform.crypto.aesEcbPkcs5EncryptBase64("music:" + json, AES_163_KEY)
     );
   } catch (e) {
-    Lyrico.log.warn("NE", "build163Key failed: " + String(e && e.message ? e.message : e));
+    Platform.log.warn("NE", "build163Key failed: " + String(e && e.message ? e.message : e));
     return "";
   }
 }
@@ -227,7 +227,7 @@ function searchSongs(request) {
   try {
     return searchSongsByEapi(request);
   } catch (e) {
-    Lyrico.log.warn(
+    Platform.log.warn(
       "NE",
       "EAPI search failed, fallback to cloudsearch: " +
         String(e && e.message ? e.message : e)
@@ -281,7 +281,7 @@ function getLyrics(request) {
       ? String(root.romalrc.lyric)
       : "";
 
-  Lyrico.log.debug(
+  Platform.log.debug(
     "NE",
     "Lyric result: " +
       JSON.stringify({

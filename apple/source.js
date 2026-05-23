@@ -113,7 +113,7 @@ function getLyrics(request) {
   const fields = song.fields || {};
   const appleId = fields.apple_id || song.id || "";
   if (!appleId) return null;
-  const body = Lyrico.http.getText("https://lyrics.paxsenix.org/apple-music/lyrics?id=" + encodeURIComponent(appleId) + "&ttml=false", {
+  const body = Platform.http.getText("https://lyrics.paxsenix.org/apple-music/lyrics?id=" + encodeURIComponent(appleId) + "&ttml=false", {
     headers: {
       "accept": "application/json",
       "User-Agent": getLyricoUserAgent()
