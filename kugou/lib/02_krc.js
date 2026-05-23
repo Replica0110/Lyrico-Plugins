@@ -88,7 +88,7 @@ function parseKrc(krcText) {
     const content = Array.isArray(item.lyricContent) ? item.lyricContent : [];
     const type = Number(item.type);
 
-    // Type 0: 罗马音/假名，逐行对应；需要跳过原文空行。
+    // Type 0: 罗马音/假名，逐行对应
     if (type === 0) {
       const romaList = [];
       let skippedEmpty = 0;
@@ -108,23 +108,18 @@ function parseKrc(krcText) {
             : "";
 
           if (text) {
+            // translated / romanization 必须是行级文本格式：
+            // [lineStartMs, lineEndMs, "text"]
             romaList.push([
               line[0],
               line[1],
-              [[line[0], line[1], text]]
-            ]);
-          } else {
-            // 对齐 master：保留空占位。
-            romaList.push([
-              line[0],
-              line[1],
-              []
+              text
             ]);
           }
         }
       });
 
-      romanization = romaList;
+      romanization = romaList.length ? romaList : null;
       return;
     }
 
@@ -140,23 +135,18 @@ function parseKrc(krcText) {
             : "";
 
           if (text) {
+            // translated / romanization 必须是行级文本格式：
+            // [lineStartMs, lineEndMs, "text"]
             transList.push([
               line[0],
               line[1],
-              [[line[0], line[1], text]]
-            ]);
-          } else {
-            // 对齐 master：保留空占位。
-            transList.push([
-              line[0],
-              line[1],
-              []
+              text
             ]);
           }
         }
       });
 
-      translated = transList;
+      translated = transList.length ? transList : null;
     }
   });
 
