@@ -70,9 +70,8 @@ function parseYrc(text) {
         const wordEnd = wordStart + Number(wordMatch[2] || 0);
         const textValue = wordMatch[3] || "";
 
-        if (textValue) {
-          words.push([wordStart, wordEnd, textValue]);
-        }
+        words.push([wordStart, wordEnd, textValue]);
+        
       }
 
       if (!words.length && content) {
@@ -143,9 +142,9 @@ function parseMixedNeteaseLyrics(text) {
         const textValue = parts.join("").trim();
         const start = Number(obj.t || 0);
 
-        if (textValue) {
-          items.push({ start: start, text: textValue });
-        }
+
+        items.push({ start: start, text: textValue });
+        
       } catch (e) {
         // ignore malformed rich line
       }

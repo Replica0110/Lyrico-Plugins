@@ -33,8 +33,10 @@ function mapSong(item, request) {
     track_number: String(item.index_album || ""),
     cover_url: buildCoverUrl(album.mid, request.config || {})
   };
+
   const subtitle = item.subtitle || item.desc || "";
   if (subtitle) fields.subtitle = String(subtitle);
+
   if (item.volume) {
     const gain = formatFixed(item.volume.gain, 3, " dB");
     const peak = formatFixed(item.volume.peak, 6, "");
@@ -44,6 +46,7 @@ function mapSong(item, request) {
     if (lra) fields.replay_gain_loudness_range = lra;
     fields.replay_gain_reference_loudness = "-18 LUFS";
   }
+
   return {
     id: String(item.id || ""),
     title: fields.title,
@@ -60,6 +63,7 @@ function mapSong(item, request) {
 function searchSongs(request) {
   const page = Number(request.page || 1);
   const pageSize = Number(request.pageSize || 20);
+
   const response = postMusicu("music.search.SearchCgiService", "DoSearchForQQMusicLite", {
     search_id: randomSearchId(),
     remoteplace: "search.android.keyboard",
@@ -72,6 +76,7 @@ function searchSongs(request) {
     page_id: 1,
     grp: 1
   });
+
   const songs = (((response.req_0 || {}).data || {}).body || {}).item_song || [];
   return songs.map(item => mapSong(item, request)).filter(song => song.id && song.title);
 }
@@ -84,73 +89,6 @@ function searchCovers(request) {
     separator: "/",
     config: request.config || {}
   }).filter(song => song.picUrl);
-}
-
-function parseTimeMs(min, sec, fraction) {
-  const ms = String(fraction || "0").padEnd(3, "0").slice(0, 3);
-  return (Number(min) * 60 + Number(sec)) * 1000 + Number(ms);
-}
-
-function parseLrc(text) {
-  const timed = [];
-  String(text || "").split(/\r?\n/).forEach(line => {
-    const matches = [];
-    const timeRe = /\[(\d{1,}):(\d{2})(?:[.:](\d{1,3}))?]/g;
-    let timeMatch;
-    while ((timeMatch = timeRe.exec(line)) !== null) matches.push(timeMatch);
-    if (!matches.length) return;
-    const content = line.slice(matches[matches.length - 1].index + matches[matches.length - 1][0].length).trim();
-    if (!content) return;
-    matches.forEach(match => timed.push([parseTimeMs(match[1], match[2], match[3]), content]));
-  });
-  timed.sort((a, b) => a[0] - b[0]);
-  return timed.map((line, index) => {
-    const end = timed[index + 1] ? Math.max(line[0], timed[index + 1][0] - 10) : line[0] + 3000;
-    return [line[0], end, line[1]];
-  });
-}
-
-
-function compactLineText(line) {
-  if (!line) return "";
-  const body = line[2];
-  if (typeof body === "string") return body;
-  if (!Array.isArray(body)) return "";
-  return body.map(word => Array.isArray(word) ? String(word[2] || "") : "").join("").trim();
-}
-
-function toTextLines(lines) {
-  return (Array.isArray(lines) ? lines : []).map(line => {
-    const text = compactLineText(line);
-    return text ? [line[0], line[1], text] : null;
-  }).filter(Boolean);
-}
-
-function lyricsMerge(originalLines, textLines) {
-  if (!Array.isArray(originalLines) || !originalLines.length || !Array.isArray(textLines) || !textLines.length) return [];
-  const sorted = textLines.slice().sort((a, b) => a[0] - b[0]);
-  const aligned = [];
-  let idx = 0;
-  for (let i = 0; i < originalLines.length; i++) {
-    const orig = originalLines[i];
-    const winStart = Number(orig[0] || 0);
-    const winEnd = i < originalLines.length - 1 ? Number(originalLines[i + 1][0] || winStart) : Number.MAX_SAFE_INTEGER;
-    let text = "";
-    while (idx < sorted.length) {
-      const line = sorted[idx];
-      const start = Number(line[0] || 0);
-      if (start < winStart - 500) {
-        idx++;
-        continue;
-      }
-      if (start >= winEnd) break;
-      text = String(line[2] || "");
-      idx++;
-      break;
-    }
-    if (text) aligned.push([winStart, Number(orig[1] || winStart), text]);
-  }
-  return aligned;
 }
 
 function bitnum(bytes, b, c) {
@@ -212,35 +150,50 @@ function keySchedule(key, decrypt) {
   const pc = [56,48,40,32,24,16,8,0,57,49,41,33,25,17,9,1,58,50,42,34,26,18,10,2,59,51,43,35];
   const pd = [62,54,46,38,30,22,14,6,61,53,45,37,29,21,13,5,60,52,44,36,28,20,12,4,27,19,11,3];
   const kc = [13,16,10,23,0,4,2,27,14,5,20,9,22,18,11,3,25,7,15,6,26,19,12,1,40,51,30,36,46,54,29,39,50,44,32,47,43,48,38,55,33,52,45,41,49,35,28,31];
-  let c = 0, d = 0;
+
+  let c = 0;
+  let d = 0;
+
   for (let i = 0; i < 28; i++) {
     c = (c + bitnum(key, pc[i], 31 - i)) >>> 0;
     d = (d + bitnum(key, pd[i], 31 - i)) >>> 0;
   }
+
   for (let i = 0; i < 16; i++) {
     c = (((c << shifts[i]) | (c >>> (28 - shifts[i]))) & 0xfffffff0) >>> 0;
     d = (((d << shifts[i]) | (d >>> (28 - shifts[i]))) & 0xfffffff0) >>> 0;
     const idx = decrypt ? 15 - i : i;
-    for (let j = 0; j < 24; j++) schedule[idx][Math.floor(j / 8)] |= bitnumIntr(c, kc[j], 7 - (j % 8));
-    for (let j = 24; j < 48; j++) schedule[idx][Math.floor(j / 8)] |= bitnumIntr(d, kc[j] - 27, 7 - (j % 8));
+
+    for (let j = 0; j < 24; j++) {
+      schedule[idx][Math.floor(j / 8)] |= bitnumIntr(c, kc[j], 7 - (j % 8));
+    }
+
+    for (let j = 24; j < 48; j++) {
+      schedule[idx][Math.floor(j / 8)] |= bitnumIntr(d, kc[j] - 27, 7 - (j % 8));
+    }
   }
+
   return schedule;
 }
 
 function cryptBlock(input, schedule) {
   let [s0, s1] = initialPermutation(input);
+
   for (let i = 0; i < 15; i++) {
     const previous = s1;
     s1 = (desF(s1, schedule[i]) ^ s0) >>> 0;
     s0 = previous;
   }
+
   s0 = (desF(s1, schedule[15]) ^ s0) >>> 0;
   return inversePermutation(s0, s1);
 }
 
 function qrcKeyBytes() {
   const bytes = [];
-  for (let i = 0; i < QRC_KEY.length; i++) bytes.push(QRC_KEY.charCodeAt(i) & 0xff);
+  for (let i = 0; i < QRC_KEY.length; i++) {
+    bytes.push(QRC_KEY.charCodeAt(i) & 0xff);
+  }
   return bytes;
 }
 
@@ -251,21 +204,28 @@ function tripleDesDecrypt(bytes) {
     keySchedule(key.slice(8, 16), false),
     keySchedule(key.slice(0, 8), true)
   ];
+
   const output = [];
+
   for (let i = 0; i + 8 <= bytes.length; i += 8) {
     let block = bytes.slice(i, i + 8);
-    for (let k = 0; k < 3; k++) block = cryptBlock(block, schedules[k]);
+    for (let k = 0; k < 3; k++) {
+      block = cryptBlock(block, schedules[k]);
+    }
     output.push.apply(output, block);
   }
+
   return output;
 }
 
 function hexToBytes(hexString) {
   const clean = String(hexString || "").replace(/[^0-9A-Fa-f]/g, "");
   const bytes = [];
+
   for (let i = 0; i + 1 < clean.length; i += 2) {
     bytes.push(parseInt(clean.slice(i, i + 2), 16) & 0xff);
   }
+
   return bytes;
 }
 
@@ -282,38 +242,171 @@ function decodeXmlEntities(text) {
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&amp;/g, "&")
-    .replace(/&#(\d+);/g, function(_, code) { return String.fromCharCode(Number(code)); });
+    .replace(/&#(\d+);/g, function(_, code) {
+      return String.fromCharCode(Number(code));
+    });
 }
 
-function parseQrc(text) {
+function parseQrcFormat(text) {
+  if (!text) return [];
+
   let content = String(text || "");
   const xml = content.match(/<Lyric_1 LyricType="1" LyricContent="([\s\S]*?)"\/>/);
-  if (xml) content = decodeXmlEntities(xml[1] || "");
-  return content.split(/\r?\n/).map(line => {
-    const match = line.trim().match(/^\[(\d+),(\d+)](.*)$/);
-    if (!match) return null;
-    const lineStart = Number(match[1] || 0);
-    const lineEnd = lineStart + Number(match[2] || 0);
-    const body = match[3] || "";
-    const words = [];
-    const temp = [];
+  if (xml) {
+    content = decodeXmlEntities(xml[1] || "");
+  }
+
+  const result = [];
+
+  content.split(/\r?\n/).forEach(rawLine => {
+    const line = String(rawLine || "").trim();
+    if (!line) return;
+
+    // 对齐 master：跳过 [ti:xxx]、[ar:xxx] 等 tag 行。
+    if (/^\[(\w+):([^\]]*)]$/.test(line)) return;
+
+    const lineMatch = line.match(/^\[(\d+),(\d+)](.*)$/);
+    if (!lineMatch) return;
+
+    const lineStart = Number(lineMatch[1] || 0);
+    const lineDuration = Number(lineMatch[2] || 0);
+    const lineEnd = lineStart + lineDuration;
+    const lineContent = lineMatch[3] || "";
+
+    const wordList = [];
+    const wordRe = /(?:^\[\d+,\d+])?((?:(?!\(\d+,\d+\)).)*)\((\d+),(\d+)\)/g;
     let wordMatch;
-    const wordRe = /(?:^\[\d+,\d+])?((?:(?!\(\d+,\d+\)).)*?)\((\d+),(\d+)\)/g;
-    while ((wordMatch = wordRe.exec(body)) !== null) {
-      temp.push([Number(wordMatch[2] || 0), wordMatch[1] || ""]);
+
+    while ((wordMatch = wordRe.exec(lineContent)) !== null) {
+      const wordText = wordMatch[1] || "";
+      const wordStart = Number(wordMatch[2] || 0);
+
+      // 这里不要过滤空文本。
+      // QQ 罗马音里可能存在 "(299,37)" 这种只有时间片、没有文本的 word。
+      // master 的 QrcParser 会保留空 LyricsWord，后续 merge 后表现为空文本，而不是把时间片当正文。
+      wordList.push([wordStart, wordText]);
     }
-    temp.forEach((item, index) => {
-      const start = item[0];
-      const end = temp[index + 1] ? temp[index + 1][0] : lineEnd;
-      if (item[1]) words.push([start, end, item[1]]);
+
+    const words = [];
+
+    wordList.forEach((item, index) => {
+      const wordStart = item[0];
+      const wordText = item[1];
+      const wordEnd = index < wordList.length - 1
+        ? wordList[index + 1][0]
+        : lineEnd;
+
+      words.push([wordStart, wordEnd, wordText]);
     });
-    if (!words.length && body) words.push([lineStart, lineEnd, body]);
-    return words.length ? [lineStart, lineEnd, words] : null;
-  }).filter(Boolean);
+
+    if (!words.length) {
+      words.push([lineStart, lineEnd, lineContent]);
+    }
+
+    result.push([lineStart, lineEnd, words]);
+  });
+
+  return result;
+}
+
+function parseLrcFormat(text) {
+  if (!text) return null;
+
+  const tempLines = [];
+
+  String(text || "").split(/\r?\n/).forEach(rawLine => {
+    const line = String(rawLine || "").trim();
+    if (!line) return;
+
+    // 对齐 master:
+    // LRC_PATTERN = ^\[(\d+):(\d+\.\d+)](.*)$
+    const match = line.match(/^\[(\d+):(\d+\.\d+)](.*)$/);
+    if (!match) return;
+
+    const minutes = Number(match[1] || 0);
+    const seconds = Number(match[2] || 0);
+    const start = Math.floor(minutes * 60 * 1000 + seconds * 1000);
+    const content = match[3] || "";
+
+    tempLines.push([start, content]);
+  });
+
+  if (!tempLines.length) return null;
+
+  tempLines.sort((a, b) => a[0] - b[0]);
+
+  return tempLines.map((current, index) => {
+    const next = index < tempLines.length - 1 ? tempLines[index + 1] : null;
+    const end = next ? Math.max(current[0], next[0] - 10) : current[0] + 2000;
+
+    return [
+      current[0],
+      end,
+      [[current[0], end, current[1]]]
+    ];
+  });
+}
+
+function compactWordsText(words) {
+  return (Array.isArray(words) ? words : [])
+    .map(word => Array.isArray(word) ? String(word[2] || "") : "")
+    .join("");
+}
+
+function lyricsMerge(originalLines, transLines) {
+  if (!Array.isArray(transLines) || !transLines.length) return null;
+
+  const sortedTransLines = transLines
+    .slice()
+    .sort((a, b) => Number(a[0] || 0) - Number(b[0] || 0));
+
+  const alignedList = [];
+  let transIdx = 0;
+  const transCount = sortedTransLines.length;
+
+  for (let i = 0; i < originalLines.length; i++) {
+    const orig = originalLines[i];
+
+    const winStart = Number(orig[0] || 0);
+    const origEnd = Number(orig[1] || winStart);
+    const winEnd = i < originalLines.length - 1
+      ? Number(originalLines[i + 1][0] || winStart)
+      : Number.MAX_SAFE_INTEGER;
+
+    let matchedText = "";
+
+    while (transIdx < transCount) {
+      const trans = sortedTransLines[transIdx];
+      const transStart = Number(trans[0] || 0);
+
+      if (transStart < winStart - 500) {
+        transIdx++;
+        continue;
+      }
+
+      if (transStart >= winEnd) {
+        break;
+      }
+
+      matchedText = compactWordsText(trans[2]);
+      transIdx++;
+      break;
+    }
+
+    // 对齐 master：没有匹配时也保留空文本占位。
+    alignedList.push([
+      winStart,
+      origEnd,
+      [[winStart, origEnd, matchedText]]
+    ]);
+  }
+
+  return alignedList;
 }
 
 function decodeMaybeBase64(value) {
   if (!value) return "";
+
   try {
     return Platform.base64.decodeText(String(value));
   } catch (e) {
@@ -324,8 +417,10 @@ function decodeMaybeBase64(value) {
 function decodeQqLyricPayload(value) {
   const raw = String(value || "");
   if (!raw) return "";
+
   const decrypted = decryptQrc(raw);
   if (decrypted) return decrypted;
+
   const decoded = decodeMaybeBase64(raw);
   return decoded || raw;
 }
@@ -334,6 +429,7 @@ function getLyrics(request) {
   const song = request.song || {};
   const id = Number(song.id || 0);
   if (!id) return null;
+
   const response = postMusicu("music.musichallSong.PlayLyricInfo", "GetPlayLyricInfo", {
     songID: id,
     songName: Platform.base64.encodeText(song.title || ""),
@@ -352,19 +448,32 @@ function getLyrics(request) {
     type: 0,
     interval: Math.round(Number(song.duration || 0) / 1000)
   });
+
   const data = ((response.req_0 || {}).data || {});
+
   const qrc = data.lyric ? decodeQqLyricPayload(data.lyric) : "";
   const trans = data.trans ? decodeQqLyricPayload(data.trans) : "";
   const roma = data.roma ? decodeQqLyricPayload(data.roma) : "";
 
-  const original = parseQrc(qrc);
-  const translated = lyricsMerge(original, parseLrc(trans));
-  const romanization = lyricsMerge(original, toTextLines(parseQrc(roma)));
+  const original = parseQrcFormat(qrc);
+  const translated = lyricsMerge(original, parseLrcFormat(trans));
+  const romanization = lyricsMerge(original, parseQrcFormat(roma));
 
-  if (!original.length && !translated.length && !romanization.length) return null;
+  if (
+    !original.length &&
+    (!translated || !translated.length) &&
+    (!romanization || !romanization.length)
+  ) {
+    return null;
+  }
+
   return {
     type: "structured",
-    tags: { ti: song.title || "", ar: song.artist || "", al: song.album || "" },
+    tags: {
+      ti: song.title || "",
+      ar: song.artist || "",
+      al: song.album || ""
+    },
     original: original,
     translated: translated,
     romanization: romanization

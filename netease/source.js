@@ -306,6 +306,7 @@ function getLyrics(request) {
   const romanization = lyricsMerge(original, parseLrc(romalrc));
 
   return {
+    type: "structured",
     tags: {
       ti: song.title || "",
       ar: song.artist || "",
