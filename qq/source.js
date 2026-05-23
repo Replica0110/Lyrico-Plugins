@@ -393,11 +393,17 @@ function lyricsMerge(originalLines, transLines) {
       break;
     }
 
-    // 对齐 master：没有匹配时也保留空文本占位。
+    // translated / romanization 必须返回整行文本格式：
+    // [lineStartMs, lineEndMs, "text"]
+    //
+    // 不能返回：
+    // [lineStartMs, lineEndMs, [[wordStartMs, wordEndMs, "text"]]]
+    //
+    // 否则宿主 parseCompactTextLines() 会把第三项当成空文本过滤掉。
     alignedList.push([
       winStart,
       origEnd,
-      [[winStart, origEnd, matchedText]]
+      matchedText
     ]);
   }
 
