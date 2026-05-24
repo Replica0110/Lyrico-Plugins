@@ -38,7 +38,35 @@ function isSodaFormat(raw) {
 function hasLrcTimestamps(raw) {
   return /[\[<]\d{1,}:\d{2}(?:[.:]\d{1,3})?[\]>]/m.test(String(raw || ""));
 }
+function toTextLines(lines) {
+  return (Array.isArray(lines) ? lines : [])
+    .map(line => {
+      if (!Array.isArray(line)) return null;
 
+      const start = Number(line[0] || 0);
+      const end = Number(line[1] || start);
+      const content = line[2];
+
+      let text = "";
+
+      if (Array.isArray(content)) {
+        text = content
+          .map(word => {
+            if (Array.isArray(word)) {
+              return String(word[2] || "");
+            }
+            return String(word || "");
+          })
+          .join("")
+          .trim();
+      } else {
+        text = String(content || "").trim();
+      }
+
+      return text ? [start, end, text] : null;
+    })
+    .filter(Boolean);
+}
 function isPlainLrc(raw) {
   let hasPlain = false;
   const lines = String(raw || "").split(/\r?\n/);
@@ -373,8 +401,8 @@ function parseSodaLyrics(lyricsData) {
   const separated = separateTracks(original, translated, romanization);
 
   const normalizedOriginal = separated.original || [];
-  const normalizedTranslated = separated.translated;
-  const normalizedRomanization = separated.romanization;
+  const normalizedTranslated = toTextLines(separated.translated);
+  const normalizedRomanization = toTextLines(separated.romanization);
 
   const rawVerbatimLrc = isSodaFormat(rawOriginal)
     ? encodeVerbatimLrc(normalizedOriginal)
@@ -386,10 +414,10 @@ function parseSodaLyrics(lyricsData) {
   return {
     tags: tags,
     original: normalizedOriginal,
-    translated: normalizedTranslated,
-    romanization: normalizedRomanization,
-    rawPlainLrc: rawPlainLrc,
-    rawVerbatimLrc: rawVerbatimLrc,
-    rawEnhancedLrc: rawEnhancedLrc
+    translated: normalizedTranslated.length ? normalizedTranslated : null,
+    romanization: normalizedRomanization.length ? normalizedRomanization : null,
+    rawPlainLrc: "",
+    rawVerbatimLrc: "",
+    rawEnhancedLrc: ""
   };
 }
