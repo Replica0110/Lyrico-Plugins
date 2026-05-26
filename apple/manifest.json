@@ -19,9 +19,15 @@
   ],
   "configFields": [
     {
+      "key": "lyrics_provider_notice",
+      "title": "歌词源说明",
+      "group": "歌词",
+      "type": "markdown",
+      "defaultValue": "### 歌词源说明\n\n- **第三方**：通过 [PaxSenix Apple Music Lyrics](https://lyrics.paxsenix.org/apple-music/lyrics) 获取歌词，不需要 Apple Music 登录态。\n- **官方**：通过 Apple Music 官方接口获取歌词，需要填写网页登录态 Cookie 中的 `media-user-token`。\n\n官方源限制：\n\n- `media-user-token` 所属地区需要与下方选择的地区一致。\n- `media-user-token` 会过期，失效后需要重新获取。\n- 高频请求或批量匹配可能触发 Apple 风控、限流或临时封禁。\n- 只有账号和地区有权限访问的歌曲才可能返回官方歌词。"
+    },
+    {
       "key": "lyrics_provider",
       "title": "歌词源",
-      "summary": "第三方源无需 Apple 登录态；官方源需要 media-user-token，批量请求可能触发 Apple 风控",
       "group": "歌词",
       "type": "dropdown",
       "required": true,
@@ -29,20 +35,17 @@
       "options": [
         {
           "value": "third_party",
-          "label": "第三方",
-          "summary": "使用第三方歌词接口"
+          "label": "第三方"
         },
         {
           "value": "official",
-          "label": "官方",
-          "summary": "官方接口，需要 media-user-token"
+          "label": "官方"
         }
       ]
     },
     {
       "key": "media_user_token",
       "title": "Media User Token",
-      "summary": "Apple Music 网页登录态 Cookie 中的 media-user-token。该 Token 会过期，失效后需要重新获取；高频请求或批量匹配可能触发风控或临时封禁",
       "group": "歌词",
       "type": "password",
       "required": true,
