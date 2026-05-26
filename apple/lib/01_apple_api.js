@@ -4,19 +4,20 @@ const WEB_USER_AGENT =
 const DEFAULT_LYRICO_USER_AGENT =
   "Lyrico/1.0 (github.com/Replica0110/Lyrico)";
 
-let cachedToken = "";
-let cachedLyricoUserAgent = "";
 const APPLE_LOG_TAG = "AppleSourcePlugin";
+
+let cachedDeveloperToken = "";
+let cachedLyricoUserAgent = "";
 
 function logApple(message) {
   if (Platform.log && Platform.log.debug) {
-    Platform.log.debug(APPLE_LOG_TAG, message);
+    Platform.log.debug(APPLE_LOG_TAG, String(message));
   }
 }
 
 function warnApple(message) {
   if (Platform.log && Platform.log.warn) {
-    Platform.log.warn(APPLE_LOG_TAG, message);
+    Platform.log.warn(APPLE_LOG_TAG, String(message));
   }
 }
 
@@ -47,7 +48,14 @@ function previewText(text, limit) {
 }
 
 function configValue(request, key, fallback) {
-  return (request.config && request.config[key]) || fallback || "";
+  const config = request && request.config ? request.config : {};
+  const value = config[key];
+
+  if (value === undefined || value === null || value === "") {
+    return fallback || "";
+  }
+
+  return value;
 }
 
 function storefront(region) {
@@ -55,59 +63,85 @@ function storefront(region) {
   if (region === "ja-JP") return "jp";
   if (region === "ko-KR") return "kr";
   if (region === "en-US") return "us";
+  if (region === "tr-TR") return "tr";
   return "us";
 }
 
-function appleGet(url, token) {
-  return Platform.http.getText(url, {
-    headers: {
-      "Authorization": "Bearer " + token,
-      "Origin": "https://music.apple.com",
-      "Referer": "https://music.apple.com/",
-      "User-Agent": getLyricoUserAgent()
-    }
-  });
-}
-
-function getToken(request) {
-  const configuredToken = configValue(request || {}, "token", "");
-  if (configuredToken) {
-    logApple("using configured token tokenLength=" + String(configuredToken.length));
-    return configuredToken;
+function getDeveloperToken() {
+  if (cachedDeveloperToken) {
+    return cachedDeveloperToken;
   }
 
-  if (cachedToken) return cachedToken;
-
-  const home = Platform.http.getText("https://beta.music.apple.com", {
+  const homeUrl = "https://music.apple.com";
+  const home = Platform.http.getText(homeUrl, {
     headers: {
-      "User-Agent": WEB_USER_AGENT
+      "User-Agent": WEB_USER_AGENT,
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
     }
   });
 
   logApple("home response length=" + String(home.length) + " preview=" + previewText(home, 500));
 
-  const indexMatch = String(home).match(/\/assets\/index~[^/]+\.js/);
-  if (!indexMatch) {
+  let indexPath = "";
+
+  const legacyMatch = String(home).match(/\/assets\/index-legacy[~\-][^"']+\.js/);
+  const normalMatch = String(home).match(/\/assets\/index[~\-][^"']+\.js/);
+  const betaMatch = String(home).match(/\/assets\/index~[^"']+\.js/);
+
+  if (legacyMatch) {
+    indexPath = legacyMatch[0];
+  } else if (normalMatch) {
+    indexPath = normalMatch[0];
+  } else if (betaMatch) {
+    indexPath = betaMatch[0];
+  }
+
+  if (!indexPath) {
     warnApple("index js path not found in home response");
     return "";
   }
 
-  logApple("index js path=" + indexMatch[0]);
+  logApple("index js path=" + indexPath);
 
-  const js = Platform.http.getText("https://beta.music.apple.com" + indexMatch[0], {
+  const js = Platform.http.getText("https://music.apple.com" + indexPath, {
     headers: {
-      "User-Agent": WEB_USER_AGENT
+      "User-Agent": WEB_USER_AGENT,
+      "Accept": "*/*",
+      "Referer": "https://music.apple.com/"
     }
   });
 
   logApple("index js response length=" + String(js.length));
 
-  const tokenMatch = String(js).match(/eyJh[^"]*/);
-  cachedToken = tokenMatch ? tokenMatch[0] : "";
+  const tokenMatch = String(js).match(/eyJh[^"']*/);
+  cachedDeveloperToken = tokenMatch ? String(tokenMatch[0]) : "";
 
-  logApple("token found=" + String(!!cachedToken) + " tokenLength=" + String(cachedToken.length));
+  logApple(
+    "developer token found=" +
+      String(!!cachedDeveloperToken) +
+      " tokenLength=" +
+      String(cachedDeveloperToken.length)
+  );
 
-  return cachedToken;
+  return cachedDeveloperToken;
+}
+
+function appleGet(url, developerToken, mediaUserToken) {
+  const headers = {
+    "Authorization": "Bearer " + developerToken,
+    "Origin": "https://music.apple.com",
+    "Referer": "https://music.apple.com/",
+    "User-Agent": getLyricoUserAgent(),
+    "Accept": "application/json, text/plain, */*"
+  };
+
+  if (mediaUserToken) {
+    headers["Cookie"] = "media-user-token=" + mediaUserToken;
+  }
+
+  return Platform.http.getText(url, {
+    headers: headers
+  });
 }
 
 function splitArtist(name, separator) {
@@ -118,7 +152,107 @@ function splitArtist(name, separator) {
 
 function shouldAppendSpace(current, next) {
   if (!next) return false;
+
   const a = String(current || "").slice(-1);
   const b = String(next || "").charAt(0);
+
   return /[A-Za-z0-9]/.test(a) && /[A-Za-z0-9]/.test(b);
+}
+
+function decodeXmlText(text) {
+  return String(text || "")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, "\"")
+    .replace(/&apos;/g, "'");
+}
+
+function stripXmlTags(text) {
+  return decodeXmlText(String(text || "").replace(/<[^>]+>/g, ""));
+}
+
+function parseTtmlTimestampToMs(value) {
+  const text = String(value || "").trim();
+  if (!text) return 0;
+
+  const msMatch = text.match(/^(\d+(?:\.\d+)?)ms$/);
+  if (msMatch) {
+    return Math.round(Number(msMatch[1]));
+  }
+
+  const secMatch = text.match(/^(\d+(?:\.\d+)?)s$/);
+  if (secMatch) {
+    return Math.round(Number(secMatch[1]) * 1000);
+  }
+
+  const hmsMatch = text.match(/^(\d+):(\d{2}):(\d{2})(?:\.(\d+))?$/);
+  if (hmsMatch) {
+    const h = Number(hmsMatch[1] || 0);
+    const m = Number(hmsMatch[2] || 0);
+    const s = Number(hmsMatch[3] || 0);
+    const fraction = String(hmsMatch[4] || "");
+    const ms = fraction ? Number("0." + fraction) * 1000 : 0;
+    return Math.round(((h * 60 + m) * 60 + s) * 1000 + ms);
+  }
+
+  const msTimeMatch = text.match(/^(\d+):(\d{2})(?:\.(\d+))?$/);
+  if (msTimeMatch) {
+    const m = Number(msTimeMatch[1] || 0);
+    const s = Number(msTimeMatch[2] || 0);
+    const fraction = String(msTimeMatch[3] || "");
+    const ms = fraction ? Number("0." + fraction) * 1000 : 0;
+    return Math.round((m * 60 + s) * 1000 + ms);
+  }
+
+  return 0;
+}
+
+function formatLrcTimestamp(ms) {
+  const value = Math.max(0, Number(ms || 0));
+  const totalSeconds = Math.floor(value / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const centiseconds = Math.floor((value % 1000) / 10);
+
+  return "[" +
+    String(minutes).padStart(2, "0") +
+    ":" +
+    String(seconds).padStart(2, "0") +
+    "." +
+    String(centiseconds).padStart(2, "0") +
+    "]";
+}
+
+function parseTtmlLines(ttml) {
+  const xml = String(ttml || "");
+  const lines = [];
+  const pRegex = /<p\b([^>]*)>([\s\S]*?)<\/p>/g;
+  let match;
+
+  while ((match = pRegex.exec(xml)) !== null) {
+    const attrs = match[1] || "";
+    const inner = match[2] || "";
+
+    const beginMatch = attrs.match(/\bbegin=["']([^"']+)["']/);
+    const endMatch = attrs.match(/\bend=["']([^"']+)["']/);
+
+    const start = beginMatch ? parseTtmlTimestampToMs(beginMatch[1]) : 0;
+    const end = endMatch ? parseTtmlTimestampToMs(endMatch[1]) : start;
+    const text = stripXmlTags(inner).trim();
+
+    if (text) {
+      lines.push([start, end, text]);
+    }
+  }
+
+  return lines;
+}
+
+function ttmlToLrc(ttml) {
+  return parseTtmlLines(ttml)
+    .map(function(line) {
+      return formatLrcTimestamp(line[0]) + line[2];
+    })
+    .join("\n");
 }

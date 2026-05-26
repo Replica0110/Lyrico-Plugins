@@ -147,9 +147,6 @@ function getLyrics(request) {
     tags: tags,
     original: parsed.original || [],
     translated: parsed.translated,
-    romanization: parsed.romanization,
-    rawPlainLrc: parsed.rawPlainLrc || "",
-    rawVerbatimLrc: parsed.rawVerbatimLrc || "",
-    rawEnhancedLrc: parsed.rawEnhancedLrc || ""
+    romanization: parsed.romanization
   };
 }

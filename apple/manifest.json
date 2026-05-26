@@ -1,8 +1,8 @@
 {
   "id": "com.applemusic.source",
   "name": "Apple Music",
-  "versionCode": 1,
-  "versionName": "0.1.0",
+  "versionCode": 2,
+  "versionName": "0.1.1",
   "author": "Replica0110",
   "description": "Apple Music 搜索源插件",
   "apiVersion": 1,
@@ -21,25 +21,35 @@
     {
       "key": "lyrics_provider",
       "title": "歌词源",
-      "summary": "选择第三方歌词接口或 Apple 官方接口",
+      "summary": "第三方源无需 Apple 登录态；官方源需要 media-user-token，批量请求可能触发 Apple 风控",
       "group": "歌词",
       "type": "dropdown",
       "required": true,
       "defaultValue": "third_party",
       "options": [
-        { "value": "third_party", "label": "第三方" },
-        { "value": "official", "label": "官方" }
+        {
+          "value": "third_party",
+          "label": "第三方",
+          "summary": "使用第三方歌词接口"
+        },
+        {
+          "value": "official",
+          "label": "官方",
+          "summary": "官方接口，需要 media-user-token"
+        }
       ]
     },
     {
-      "key": "token",
-      "title": "Token",
-      "summary": "使用 Apple 官方歌词源时必填",
+      "key": "media_user_token",
+      "title": "Media User Token",
+      "summary": "Apple Music 网页登录态 Cookie 中的 media-user-token。该 Token 会过期，失效后需要重新获取；高频请求或批量匹配可能触发风控或临时封禁",
       "group": "歌词",
       "type": "password",
       "required": true,
       "defaultValue": "",
-      "dependency": { "match": { "key": "lyrics_provider", "value": "official" } }
+      "dependency": {
+        "match": { "key": "lyrics_provider", "value": "official" }
+      }
     },
     {
       "key": "region",
@@ -50,10 +60,11 @@
       "required": true,
       "defaultValue": "zh-CN",
       "options": [
-        { "value": "zh-CN", "label": "zh-CN" },
-        { "value": "en-US", "label": "en-US" },
-        { "value": "ja-JP", "label": "ja-JP" },
-        { "value": "ko-KR", "label": "ko-KR" }
+        { "value": "zh-CN", "label": "中国大陆", "summary": "zh-CN" },
+        { "value": "en-US", "label": "美国", "summary": "en-US" },
+        { "value": "ja-JP", "label": "日本", "summary": "ja-JP" },
+        { "value": "ko-KR", "label": "韩国", "summary": "ko-KR" },
+        { "value": "tr-TR", "label": "土耳其", "summary": "tr-TR" }
       ]
     },
     {
@@ -72,18 +83,125 @@
     }
   ],
   "metadataFields": [
-    { "key": "title", "title": "歌曲标题", "group": "基本信息", "type": "text", "writeable": true, "defaultTarget": "TITLE", "defaultMode": "OVERWRITE" },
-    { "key": "artist", "title": "艺术家", "group": "基本信息", "type": "text", "writeable": true, "defaultTarget": "ARTIST", "defaultMode": "OVERWRITE" },
-    { "key": "album", "title": "专辑名", "group": "基本信息", "type": "text", "writeable": true, "defaultTarget": "ALBUM", "defaultMode": "OVERWRITE" },
-    { "key": "date", "title": "发行日期", "group": "基本信息", "type": "date", "writeable": true, "defaultTarget": "DATE", "defaultMode": "SUPPLEMENT" },
-    { "key": "track_number", "title": "音轨号", "group": "基本信息", "type": "number", "writeable": true, "defaultTarget": "TRACK_NUMBER", "defaultMode": "SUPPLEMENT" },
-    { "key": "disc_number", "title": "碟片号", "group": "基本信息", "type": "number", "writeable": true, "defaultTarget": "DISC_NUMBER", "defaultMode": "SUPPLEMENT" },
-    { "key": "cover_url", "title": "封面图片", "group": "媒体", "type": "url", "writeable": true, "defaultTarget": "COVER", "defaultMode": "SUPPLEMENT" },
-    { "key": "composer", "title": "作曲", "group": "制作信息", "type": "text", "writeable": true, "defaultTarget": "COMPOSER", "defaultMode": "SUPPLEMENT" },
-    { "key": "lyricist", "title": "作词", "group": "制作信息", "type": "text", "writeable": true, "defaultTarget": "LYRICIST", "defaultMode": "SUPPLEMENT" },
-    { "key": "genre", "title": "流派", "group": "扩展", "type": "text", "writeable": true, "defaultTarget": "GENRE", "defaultMode": "SUPPLEMENT" },
-    { "key": "apple_id", "title": "Apple ID", "group": "内部", "type": "text", "writeable": false, "internal": true, "defaultTarget": "CUSTOM", "defaultMode": "DISABLED" },
-    { "key": "album_id", "title": "Apple 专辑ID", "group": "内部", "type": "text", "writeable": false, "internal": true, "defaultTarget": "CUSTOM", "defaultMode": "DISABLED" },
-    { "key": "play_params_id", "title": "Apple 播放参数ID", "group": "内部", "type": "text", "writeable": false, "internal": true, "defaultTarget": "CUSTOM", "defaultMode": "DISABLED" }
+    {
+      "key": "title",
+      "title": "歌曲标题",
+      "group": "基本信息",
+      "type": "text",
+      "writeable": true,
+      "defaultTarget": "TITLE",
+      "defaultMode": "OVERWRITE"
+    },
+    {
+      "key": "artist",
+      "title": "艺术家",
+      "group": "基本信息",
+      "type": "text",
+      "writeable": true,
+      "defaultTarget": "ARTIST",
+      "defaultMode": "OVERWRITE"
+    },
+    {
+      "key": "album",
+      "title": "专辑名",
+      "group": "基本信息",
+      "type": "text",
+      "writeable": true,
+      "defaultTarget": "ALBUM",
+      "defaultMode": "OVERWRITE"
+    },
+    {
+      "key": "date",
+      "title": "发行日期",
+      "group": "基本信息",
+      "type": "date",
+      "writeable": true,
+      "defaultTarget": "DATE",
+      "defaultMode": "SUPPLEMENT"
+    },
+    {
+      "key": "track_number",
+      "title": "音轨号",
+      "group": "基本信息",
+      "type": "number",
+      "writeable": true,
+      "defaultTarget": "TRACK_NUMBER",
+      "defaultMode": "SUPPLEMENT"
+    },
+    {
+      "key": "disc_number",
+      "title": "碟片号",
+      "group": "基本信息",
+      "type": "number",
+      "writeable": true,
+      "defaultTarget": "DISC_NUMBER",
+      "defaultMode": "SUPPLEMENT"
+    },
+    {
+      "key": "cover_url",
+      "title": "封面图片",
+      "group": "媒体",
+      "type": "url",
+      "writeable": true,
+      "defaultTarget": "COVER",
+      "defaultMode": "SUPPLEMENT"
+    },
+    {
+      "key": "composer",
+      "title": "作曲",
+      "group": "制作信息",
+      "type": "text",
+      "writeable": true,
+      "defaultTarget": "COMPOSER",
+      "defaultMode": "SUPPLEMENT"
+    },
+    {
+      "key": "lyricist",
+      "title": "作词",
+      "group": "制作信息",
+      "type": "text",
+      "writeable": true,
+      "defaultTarget": "LYRICIST",
+      "defaultMode": "SUPPLEMENT"
+    },
+    {
+      "key": "genre",
+      "title": "流派",
+      "group": "扩展",
+      "type": "text",
+      "writeable": true,
+      "defaultTarget": "GENRE",
+      "defaultMode": "SUPPLEMENT"
+    },
+    {
+      "key": "apple_id",
+      "title": "Apple ID",
+      "group": "内部",
+      "type": "text",
+      "writeable": false,
+      "internal": true,
+      "defaultTarget": "CUSTOM",
+      "defaultMode": "DISABLED"
+    },
+    {
+      "key": "album_id",
+      "title": "Apple 专辑ID",
+      "group": "内部",
+      "type": "text",
+      "writeable": false,
+      "internal": true,
+      "defaultTarget": "CUSTOM",
+      "defaultMode": "DISABLED"
+    },
+    {
+      "key": "play_params_id",
+      "title": "Apple 播放参数ID",
+      "group": "内部",
+      "type": "text",
+      "writeable": false,
+      "internal": true,
+      "defaultTarget": "CUSTOM",
+      "defaultMode": "DISABLED"
+    }
   ]
 }

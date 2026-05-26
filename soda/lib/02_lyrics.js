@@ -404,20 +404,10 @@ function parseSodaLyrics(lyricsData) {
   const normalizedTranslated = toTextLines(separated.translated);
   const normalizedRomanization = toTextLines(separated.romanization);
 
-  const rawVerbatimLrc = isSodaFormat(rawOriginal)
-    ? encodeVerbatimLrc(normalizedOriginal)
-    : (isVerbatimLrc(rawOriginal) ? rawOriginal : "");
-
-  const rawPlainLrc = isPlainLrc(rawOriginal) ? rawOriginal : "";
-  const rawEnhancedLrc = isEnhancedLrc(rawOriginal) ? rawOriginal : "";
-
   return {
     tags: tags,
     original: normalizedOriginal,
     translated: normalizedTranslated.length ? normalizedTranslated : null,
-    romanization: normalizedRomanization.length ? normalizedRomanization : null,
-    rawPlainLrc: "",
-    rawVerbatimLrc: "",
-    rawEnhancedLrc: ""
+    romanization: normalizedRomanization.length ? normalizedRomanization : null
   };
 }
