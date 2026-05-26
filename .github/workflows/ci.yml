@@ -1,0 +1,38 @@
+name: Plugin CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  package-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout plugins
+        uses: actions/checkout@v4
+        with:
+          path: plugins
+
+      - name: Checkout Lyrico devkit
+        uses: actions/checkout@v4
+        with:
+          repository: Replica0110/Lyrico
+          path: Lyrico
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Package and test plugins
+        working-directory: plugins
+        run: node scripts/plugin-ci.mjs --devkit ../Lyrico/tools/plugin-devkit/src/cli.js --out dist/plugins
+
+      - name: Upload plugin packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-packages
+          path: plugins/dist/plugins/*.zip
+          if-no-files-found: error
+

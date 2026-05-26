@@ -1,0 +1,69 @@
+name: Plugin Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to create or update
+        required: true
+        type: string
+      title:
+        description: Release title
+        required: false
+        type: string
+      prerelease:
+        description: Mark as prerelease
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout plugins
+        uses: actions/checkout@v4
+        with:
+          path: plugins
+
+      - name: Checkout Lyrico devkit
+        uses: actions/checkout@v4
+        with:
+          repository: Replica0110/Lyrico
+          path: Lyrico
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build release packages
+        working-directory: plugins
+        run: node scripts/package-release.mjs --devkit ../Lyrico/tools/plugin-devkit/src/cli.js --out dist/release
+
+      - name: Create or update GitHub release
+        working-directory: plugins
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_TITLE: ${{ inputs.title }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          title="${RELEASE_TITLE:-$RELEASE_TAG}"
+          notes="Lyrico plugin packages generated from manifest.json discovery."
+          prerelease_flag=""
+          if [ "$PRERELEASE" = "true" ]; then
+            prerelease_flag="--prerelease"
+          fi
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" --title "$title" --notes "$notes" $prerelease_flag
+            gh release upload "$RELEASE_TAG" dist/release/*.zip dist/release/release-manifest.json --clobber
+          else
+            gh release create "$RELEASE_TAG" dist/release/*.zip dist/release/release-manifest.json --title "$title" --notes "$notes" $prerelease_flag
+          fi
+
