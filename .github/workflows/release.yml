@@ -54,16 +54,14 @@ jobs:
           PRERELEASE: ${{ inputs.prerelease }}
         run: |
           title="${RELEASE_TITLE:-$RELEASE_TAG}"
-          notes="Lyrico plugin packages generated from manifest.json discovery."
           prerelease_flag=""
           if [ "$PRERELEASE" = "true" ]; then
             prerelease_flag="--prerelease"
           fi
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release edit "$RELEASE_TAG" --title "$title" --notes "$notes" $prerelease_flag
+            gh release edit "$RELEASE_TAG" --title "$title" --notes-file dist/release/release-notes.md $prerelease_flag
             gh release upload "$RELEASE_TAG" dist/release/*.zip dist/release/release-manifest.json --clobber
           else
-            gh release create "$RELEASE_TAG" dist/release/*.zip dist/release/release-manifest.json --title "$title" --notes "$notes" $prerelease_flag
+            gh release create "$RELEASE_TAG" dist/release/*.zip dist/release/release-manifest.json --title "$title" --notes-file dist/release/release-notes.md $prerelease_flag
           fi
-
