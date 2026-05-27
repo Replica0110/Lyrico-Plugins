@@ -8,7 +8,7 @@
   "apiVersion": 1,
   "includeDirs": ["lib"],
   "entry": "source.js",
-  "icon": "icon.png"
+  "icon": "icon.png",
   "capabilities": ["searchSongs", "getLyrics", "searchCovers"],
   "requiredHostApis": [
     "http.getText",
