@@ -282,6 +282,61 @@ function getThirdPartyLyrics(request, appleId, song) {
 
   return parseThirdPartyLyrics(body, song);
 }
+function pickTtmlLocalization(attrs) {
+  const value = attrs.ttmlLocalizations;
+
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      const item = value[i];
+      const ttml = extractTtmlFromLocalizationItem(item);
+      if (ttml) return ttml;
+    }
+    return "";
+  }
+
+  if (typeof value === "object") {
+    const direct = extractTtmlFromLocalizationItem(value);
+    if (direct) return direct;
+
+    const keys = Object.keys(value);
+    for (let i = 0; i < keys.length; i++) {
+      const ttml = extractTtmlFromLocalizationItem(value[keys[i]]);
+      if (ttml) return ttml;
+    }
+  }
+
+  return "";
+}
+
+function extractTtmlFromLocalizationItem(item) {
+  if (!item) {
+    return "";
+  }
+
+  if (typeof item === "string") {
+    return item;
+  }
+
+  if (typeof item !== "object") {
+    return "";
+  }
+
+  return String(
+    item.ttml ||
+    item.ttmlContent ||
+    item.lyrics ||
+    item.value ||
+    ""
+  );
+}
 function getOfficialTtml(song) {
   const relationships = song.relationships || {};
 
@@ -295,6 +350,17 @@ function getOfficialTtml(song) {
     if (!data.length) continue;
 
     const attrs = data[0].attributes || {};
+
+    const localizedTtml = pickTtmlLocalization(attrs);
+    if (localizedTtml) {
+      logApple("official lyrics using relationship=" + key + " field=ttmlLocalizations");
+      return {
+        relationship: key,
+        field: "ttmlLocalizations",
+        ttml: localizedTtml
+      };
+    }
+
     const ttml = String(
       attrs.ttml ||
       attrs.ttmlContent ||
@@ -303,9 +369,10 @@ function getOfficialTtml(song) {
     );
 
     if (ttml) {
-      logApple("official lyrics using relationship=" + key);
+      logApple("official lyrics using relationship=" + key + " field=ttml");
       return {
         relationship: key,
+        field: "ttml",
         ttml: ttml
       };
     }
@@ -313,6 +380,7 @@ function getOfficialTtml(song) {
 
   return {
     relationship: "",
+    field: "",
     ttml: ""
   };
 }
@@ -335,6 +403,7 @@ function getOfficialLyrics(request, appleId, song) {
 
   const url = "https://amp-api.music.apple.com/v1/catalog/" + storefront(region) + "/songs/" + encodeURIComponent(appleId)
     + "?include=syllable-lyrics,lyrics"
+    + "&extend=ttmlLocalizations"
     + "&l=" + encodeURIComponent(region)
     + "&platform=web";
 
