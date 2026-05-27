@@ -7,6 +7,7 @@
   "description": "Apple Music 搜索源插件",
   "apiVersion": 1,
   "includeDirs": ["lib"],
+  "icon": "icon.png",
   "entry": "source.js",
   "capabilities": ["searchSongs", "getLyrics", "searchCovers"],
   "requiredHostApis": [
