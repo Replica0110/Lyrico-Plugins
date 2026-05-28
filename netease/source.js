@@ -30,7 +30,9 @@ function getSongDuration(song) {
 function getTrackNumber(song) {
   return String(song.no || song.trackNumber || song.trackerNumber || "");
 }
-
+function getDiscNumber(song) {
+  return String(song.cd || "");
+}
 function getPublishTime(song) {
   return Number(song.publishTime || song.publishTimeMs || 0);
 }
@@ -129,6 +131,7 @@ function mapSong(song, request) {
     album: String(album.name || ""),
     date: formatDate(getPublishTime(song)),
     track_number: getTrackNumber(song),
+    disc_number: getDiscNumber(song),
     cover_url: picUrl
   };
 
@@ -149,6 +152,7 @@ function mapSong(song, request) {
     duration: getSongDuration(song),
     date: fields.date,
     trackNumber: fields.track_number,
+    discNumber:fields.disc_number,
     picUrl: picUrl,
     fields: fields
   };

@@ -23,6 +23,7 @@
     { "key": "album", "title": "专辑名", "group": "基本信息", "writeable": true, "defaultTarget": "ALBUM", "defaultMode": "OVERWRITE" },
     { "key": "date", "title": "发行日期", "group": "基本信息", "writeable": true, "defaultTarget": "DATE", "defaultMode": "SUPPLEMENT" },
     { "key": "track_number", "title": "音轨号", "group": "基本信息", "writeable": true, "defaultTarget": "TRACK_NUMBER", "defaultMode": "SUPPLEMENT" },
+    { "key": "disc_number", "title": "碟片号", "group": "基本信息", "writeable": true, "defaultTarget": "DISC_NUMBER", "defaultMode": "SUPPLEMENT" },
     { "key": "cover_url", "title": "封面图片", "group": "媒体", "writeable": true, "defaultTarget": "COVER", "defaultMode": "SUPPLEMENT" },
     { "key": "netease_163_key", "title": "网易163 Key", "group": "内部", "writeable": true, "defaultTarget": "COMMENT", "defaultMode": "DISABLED" },
     { "key": "subtitle", "title": "副标题", "group": "扩展", "writeable": true, "defaultTarget": "COMMENT", "defaultMode": "DISABLED" }
