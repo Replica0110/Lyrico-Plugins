@@ -27,12 +27,11 @@ jobs:
 
       - name: Package and test plugins
         working-directory: plugins
-        run: node scripts/plugin-ci.mjs --devkit ../Lyrico/tools/plugin-devkit/src/cli.js --out dist/plugins
+        run: node scripts/plugin-ci.mjs --devkit ../Lyrico/tools/plugin-devkit/src/cli.js --out dist/plugins --importable-out dist/importable
 
-      - name: Upload plugin packages
+      - name: Upload importable plugin bundle
         uses: actions/upload-artifact@v4
         with:
-          name: plugin-packages
-          path: plugins/dist/plugins/*.zip
+          name: Lyrico-Plugins
+          path: plugins/dist/importable/*
           if-no-files-found: error
-
