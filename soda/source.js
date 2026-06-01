@@ -43,6 +43,13 @@ function parseTags(track) {
   return result;
 }
 
+const SUPPORTED_TAG_FIELDS = {
+  genre: true,
+  language: true,
+  comment: true,
+  copyright: true
+};
+
 function mapTrack(track, request) {
   const makerTeam = track.song_maker_team || track.makerTeam || {};
   const subtitle = String(track.relation_media || track.relationMedia || "");
@@ -52,7 +59,10 @@ function mapTrack(track, request) {
     title: String(track.name || ""),
     artist: names(track.artists, request.separator),
     album: String((track.album || {}).name || ""),
-    cover_url: cover,
+    cover_url: cover
+  };
+
+  const internal = {
     soda_track_id: String(track.id || "")
   };
 
@@ -61,11 +71,13 @@ function mapTrack(track, request) {
 
   if (composers) fields.composer = composers;
   if (lyricists) fields.lyricist = lyricists;
-  if (subtitle) fields.subtitle = subtitle;
+  if (subtitle) fields.comment = subtitle;
 
   const tags = parseTags(track);
   Object.keys(tags).forEach(key => {
-    fields[key] = tags[key];
+    if (SUPPORTED_TAG_FIELDS[key] && tags[key] && !fields[key]) {
+      fields[key] = tags[key];
+    }
   });
 
   return {
@@ -75,7 +87,8 @@ function mapTrack(track, request) {
     album: fields.album,
     duration: Number(track.duration || 0),
     picUrl: cover,
-    fields: fields
+    fields: fields,
+    internal: internal
   };
 }
 
@@ -112,8 +125,8 @@ function searchCovers(request) {
 
 function getLyrics(request) {
   const song = request.song || {};
-  const fields = song.fields || {};
-  const trackId = fields.soda_track_id || song.id || "";
+  const internal = song.internal || {};
+  const trackId = internal.soda_track_id || song.id || "";
 
   if (!trackId) return null;
 

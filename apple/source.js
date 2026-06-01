@@ -25,7 +25,10 @@ function mapSong(id, attrs, request) {
     album: String(attrs.albumName || ""),
     date: String(attrs.releaseDate || ""),
     track_number: trackNumber,
-    cover_url: artwork,
+    cover_url: artwork
+  };
+
+  const internal = {
     apple_id: appleId
   };
 
@@ -42,7 +45,7 @@ function mapSong(id, attrs, request) {
   }
 
   if (attrs.playParams && attrs.playParams.id) {
-    fields.play_params_id = String(attrs.playParams.id);
+    internal.play_params_id = String(attrs.playParams.id);
   }
 
   return {
@@ -54,7 +57,8 @@ function mapSong(id, attrs, request) {
     date: fields.date,
     trackNumber: trackNumber,
     picUrl: artwork,
-    fields: fields
+    fields: fields,
+    internal: internal
   };
 }
 
@@ -425,8 +429,8 @@ function getOfficialLyrics(request, appleId, song) {
 
 function getLyrics(request) {
   const song = request.song || {};
-  const fields = song.fields || {};
-  const appleId = String(fields.apple_id || song.id || "").trim();
+  const internal = song.internal || {};
+  const appleId = String(internal.apple_id || song.id || "").trim();
 
   if (!appleId) {
     warnApple("lyrics aborted because appleId is empty");

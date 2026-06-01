@@ -1,34 +1,20 @@
 {
   "id": "com.kugou.source",
   "name": "酷狗音乐",
-  "versionCode": 1,
-  "versionName": "0.1.0",
+  "versionCode": 2,
+  "versionName": "0.1.1",
   "author": "Replica0110",
   "description": "酷狗搜索源插件",
   "apiVersion": 1,
-  "includeDirs": ["lib"],
+  "includeDirs": [
+    "lib"
+  ],
   "entry": "source.js",
   "icon": "icon.png",
-  "capabilities": ["searchSongs", "getLyrics", "searchCovers"],
-  "requiredHostApis": [
-    "http.getText",
-    "http.postText",
-    "crypto.md5",
-    "base64.encodeText",
-    "base64.decodeText",
-    "base64.decodeBytes",
-    "base64.encodeBytes",
-    "base64.dropBytes",
-    "compression.inflateBytesToText",
-    "compression.inflateBase64ToText"
+  "capabilities": [
+    "searchSongs",
+    "getLyrics",
+    "searchCovers"
   ],
-  "metadataFields": [
-    { "key": "title", "title": "歌曲标题", "group": "基本信息", "writeable": true, "defaultTarget": "TITLE", "defaultMode": "OVERWRITE" },
-    { "key": "artist", "title": "艺术家", "group": "基本信息", "writeable": true, "defaultTarget": "ARTIST", "defaultMode": "OVERWRITE" },
-    { "key": "album", "title": "专辑名", "group": "基本信息", "writeable": true, "defaultTarget": "ALBUM", "defaultMode": "OVERWRITE" },
-    { "key": "date", "title": "发行日期", "group": "基本信息", "writeable": true, "defaultTarget": "DATE", "defaultMode": "SUPPLEMENT" },
-    { "key": "cover_url", "title": "封面图片", "group": "媒体", "writeable": true, "defaultTarget": "COVER", "defaultMode": "SUPPLEMENT" },
-    { "key": "subtitle", "title": "副标题", "group": "扩展", "writeable": true, "defaultTarget": "COMMENT", "defaultMode": "DISABLED" },
-    { "key": "hash", "title": "哈希值", "group": "内部", "writeable": false, "internal": true }
-  ]
+  "minHostApiVersion": 1
 }

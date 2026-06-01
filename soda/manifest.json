@@ -1,25 +1,20 @@
 {
   "id": "com.sodamusic.source",
   "name": "汽水音乐",
-  "versionCode": 1,
-  "versionName": "0.1.0",
+  "versionCode": 2,
+  "versionName": "0.1.1",
   "author": "Replica0110",
   "description": "汽水音乐搜索源插件",
   "apiVersion": 1,
-  "includeDirs": ["lib"],
+  "includeDirs": [
+    "lib"
+  ],
   "icon": "icon.png",
   "entry": "source.js",
-  "capabilities": ["searchSongs", "getLyrics", "searchCovers"],
-  "requiredHostApis": ["http.getText", "http.postText"],
-  "metadataFields": [
-    { "key": "title", "title": "歌曲标题", "group": "基本信息", "writeable": true, "defaultTarget": "TITLE", "defaultMode": "OVERWRITE" },
-    { "key": "artist", "title": "艺术家", "group": "基本信息", "writeable": true, "defaultTarget": "ARTIST", "defaultMode": "OVERWRITE" },
-    { "key": "album", "title": "专辑名", "group": "基本信息", "writeable": true, "defaultTarget": "ALBUM", "defaultMode": "OVERWRITE" },
-    { "key": "cover_url", "title": "封面图片", "group": "媒体", "writeable": true, "defaultTarget": "COVER", "defaultMode": "SUPPLEMENT" },
-    { "key": "soda_track_id", "title": "汽水音轨ID", "group": "内部", "writeable": false, "internal": true },
-    { "key": "composer", "title": "作曲", "group": "制作信息", "writeable": true, "defaultTarget": "COMPOSER", "defaultMode": "SUPPLEMENT" },
-    { "key": "lyricist", "title": "作词", "group": "制作信息", "writeable": true, "defaultTarget": "LYRICIST", "defaultMode": "SUPPLEMENT" },
-    { "key": "subtitle", "title": "副标题", "group": "扩展", "writeable": true, "defaultTarget": "COMMENT", "defaultMode": "DISABLED" },
-    { "key": "genre", "title": "流派", "group": "扩展", "writeable": true, "defaultTarget": "GENRE", "defaultMode": "SUPPLEMENT" }
-  ]
+  "capabilities": [
+    "searchSongs",
+    "getLyrics",
+    "searchCovers"
+  ],
+  "minHostApiVersion": 1
 }

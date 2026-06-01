@@ -136,13 +136,12 @@ function mapSong(song, request) {
   };
 
   if (aliases.length) {
-    fields.subtitle = aliases.join(" / ");
+    fields.comment = aliases.join(" / ");
   }
 
   const key = build163Key(song);
-  if (key) {
-    fields.netease_163_key = key;
-  }
+  const internal = {};
+  if (key) internal.netease_163_key = key;
 
   return {
     id: String(song.id || ""),
@@ -154,7 +153,8 @@ function mapSong(song, request) {
     trackNumber: fields.track_number,
     discNumber:fields.disc_number,
     picUrl: picUrl,
-    fields: fields
+    fields: fields,
+    internal: internal
   };
 }
 

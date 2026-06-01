@@ -1,25 +1,20 @@
 {
   "id": "com.qqmusic.source",
   "name": "QQ音乐",
-  "versionCode": 1,
-  "versionName": "0.1.0",
+  "versionCode": 2,
+  "versionName": "0.1.1",
   "author": "Replica0110",
   "description": "QQ音乐搜索源插件",
   "apiVersion": 1,
-  "includeDirs": ["lib"],
+  "includeDirs": [
+    "lib"
+  ],
   "icon": "icon.png",
   "entry": "source.js",
-  "capabilities": ["searchSongs", "getLyrics", "searchCovers"],
-  "requiredHostApis": [
-    "http.getText",
-    "http.postText",
-    "base64.encodeText",
-    "base64.decodeText",
-    "base64.decodeBytes",
-    "base64.encodeBytes",
-    "base64.dropBytes",
-    "compression.inflateBytesToText",
-    "compression.inflateBase64ToText"
+  "capabilities": [
+    "searchSongs",
+    "getLyrics",
+    "searchCovers"
   ],
   "configFields": [
     {
@@ -30,22 +25,20 @@
       "required": true,
       "defaultValue": "1200",
       "options": [
-        { "value": "500", "label": "500 x 500" },
-        { "value": "800", "label": "800 x 800" },
-        { "value": "1200", "label": "1200 x 1200" }
+        {
+          "value": "500",
+          "label": "500 x 500"
+        },
+        {
+          "value": "800",
+          "label": "800 x 800"
+        },
+        {
+          "value": "1200",
+          "label": "1200 x 1200"
+        }
       ]
     }
   ],
-  "metadataFields": [
-    { "key": "title", "title": "歌曲标题", "group": "基本信息", "writeable": true, "defaultTarget": "TITLE", "defaultMode": "OVERWRITE" },
-    { "key": "artist", "title": "艺术家", "group": "基本信息", "writeable": true, "defaultTarget": "ARTIST", "defaultMode": "OVERWRITE" },
-    { "key": "album", "title": "专辑名", "group": "基本信息", "writeable": true, "defaultTarget": "ALBUM", "defaultMode": "OVERWRITE" },
-    { "key": "date", "title": "发行日期", "group": "基本信息", "writeable": true, "defaultTarget": "DATE", "defaultMode": "SUPPLEMENT" },
-    { "key": "track_number", "title": "音轨号", "group": "基本信息", "writeable": true, "defaultTarget": "TRACK_NUMBER", "defaultMode": "SUPPLEMENT" },
-    { "key": "cover_url", "title": "封面图片", "group": "媒体", "writeable": true, "defaultTarget": "COVER", "defaultMode": "SUPPLEMENT" },
-    { "key": "subtitle", "title": "副标题", "group": "扩展", "writeable": true, "defaultTarget": "COMMENT", "defaultMode": "DISABLED" },
-    { "key": "replay_gain_track_gain", "title": "回放增益", "group": "音频", "writeable": true, "defaultTarget": "REPLAY_GAIN_TRACK_GAIN", "defaultMode": "SUPPLEMENT" },
-    { "key": "replay_gain_track_peak", "title": "回放峰值", "group": "音频", "writeable": true, "defaultTarget": "REPLAY_GAIN_TRACK_PEAK", "defaultMode": "SUPPLEMENT" },
-    { "key": "replay_gain_reference_loudness", "title": "参考响度", "group": "音频", "writeable": true, "defaultTarget": "REPLAY_GAIN_REFERENCE_LOUDNESS", "defaultMode": "SUPPLEMENT" }
-  ]
+  "minHostApiVersion": 1
 }

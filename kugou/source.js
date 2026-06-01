@@ -20,7 +20,9 @@ function mapSong(item, separator) {
       album: album,
       date: date,
       cover_url: coverUrl,
-      subtitle: String(item.Auxiliary || ""),
+      comment: String(item.Auxiliary || "")
+    },
+    internal: {
       hash: hash
     }
   };
@@ -50,8 +52,8 @@ function searchCovers(request) {
 
 function getLyrics(request) {
   const song = request.song || {};
-  const fields = song.fields || {};
-  const hash = fields.hash || "";
+  const internal = song.internal || {};
+  const hash = internal.hash || "";
   if (!hash) return null;
 
   const searchParams = signParams({

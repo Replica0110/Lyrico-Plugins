@@ -35,16 +35,15 @@ function mapSong(item, request) {
   };
 
   const subtitle = item.subtitle || item.desc || "";
-  if (subtitle) fields.subtitle = String(subtitle);
+  if (subtitle) fields.comment = String(subtitle);
 
   if (item.volume) {
     const gain = formatFixed(item.volume.gain, 3, " dB");
     const peak = formatFixed(item.volume.peak, 6, "");
     const lra = formatFixed(item.volume.lra, 3, " LU");
-    if (gain) fields.replay_gain_track_gain = gain;
-    if (peak) fields.replay_gain_track_peak = peak;
-    if (lra) fields.replay_gain_loudness_range = lra;
-    fields.replay_gain_reference_loudness = "-18 LUFS";
+    if (gain) fields.replaygain_track_gain = gain;
+    if (peak) fields.replaygain_track_peak = peak;
+    fields.replaygain_reference_loudness = "-18 LUFS";
   }
 
   return {
