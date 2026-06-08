@@ -62,6 +62,20 @@ function mapSong(id, attrs, request) {
   };
 }
 
+function appleRequestRegion(request) {
+  return configValue(request, "region", "zh-CN");
+}
+
+function appleRequestLanguage(request) {
+  /*
+   * 兼容旧 manifest：
+   * - 旧配置只有 region=zh-CN/en-US/...
+   * - 新配置可以有 region=cn/us/... + language=zh-Hans/en-US/...
+   */
+  const fallback = configValue(request, "region", "zh-CN");
+  return configValue(request, "language", fallback);
+}
+
 function searchSongs(request) {
   const developerToken = getDeveloperToken();
 
@@ -70,19 +84,33 @@ function searchSongs(request) {
     return [];
   }
 
-  const region = configValue(request, "region", "zh-CN");
-  const offset = Math.max(0, (Number(request.page || 1) - 1) * Number(request.pageSize || 20));
+  const region = appleRequestRegion(request);
+  const language = appleRequestLanguage(request);
+
+  const offset = Math.max(
+    0,
+    (Number(request.page || 1) - 1) * Number(request.pageSize || 20)
+  );
 
   const url = "https://amp-api.music.apple.com/v1/catalog/" + storefront(region) + "/search"
     + "?term=" + encodeURIComponent(request.keyword || "")
     + "&types=songs"
     + "&limit=" + encodeURIComponent(request.pageSize || 20)
     + "&offset=" + encodeURIComponent(offset)
-    + "&l=" + encodeURIComponent(region)
+    + "&l=" + encodeURIComponent(language)
     + "&platform=web"
     + "&format[resources]=map";
 
-  logApple("search request keyword=" + String(request.keyword || "") + " region=" + region + " url=" + url);
+  logApple(
+    "search request keyword=" +
+      String(request.keyword || "") +
+      " region=" +
+      region +
+      " language=" +
+      language +
+      " url=" +
+      url
+  );
 
   const raw = appleGet(url, developerToken, "");
   logApple("search response length=" + String(raw.length) + " preview=" + previewText(raw, 1500));
@@ -228,13 +256,14 @@ function parseThirdPartyLyrics(rawJson, song) {
   };
 }
 
-function parseOfficialLyrics(rawJson, fallbackSong) {
+function parseOfficialLyrics(rawJson, fallbackSong, request) {
   const root = JSON.parse(rawJson);
   const song = ((root.data || [])[0]) || {};
   const attrs = song.attributes || {};
+  const language = appleRequestLanguage(request);
 
-  const official = getOfficialTtml(song);
-  const ttml = official.ttml;
+  const official = getOfficialTtml(song, language);
+  const ttml = applyAppleOfficialLocalizationToTtml(official.ttml, language);
 
   if (!ttml) {
     warnApple(
@@ -286,8 +315,10 @@ function getThirdPartyLyrics(request, appleId, song) {
 
   return parseThirdPartyLyrics(body, song);
 }
-function pickTtmlLocalization(attrs) {
+
+function pickTtmlLocalization(attrs, language) {
   const value = attrs.ttmlLocalizations;
+  const candidates = appleLanguageCandidates(language);
 
   if (!value) {
     return "";
@@ -298,26 +329,85 @@ function pickTtmlLocalization(attrs) {
   }
 
   if (Array.isArray(value)) {
+    let fallback = "";
+
     for (let i = 0; i < value.length; i++) {
       const item = value[i];
+      const locale = getLocalizationLocale(item);
       const ttml = extractTtmlFromLocalizationItem(item);
-      if (ttml) return ttml;
+
+      if (!ttml) {
+        continue;
+      }
+
+      if (candidates.indexOf(locale) >= 0) {
+        return ttml;
+      }
+
+      if (!fallback) {
+        fallback = ttml;
+      }
     }
-    return "";
+
+    return fallback;
   }
 
   if (typeof value === "object") {
+    for (let i = 0; i < candidates.length; i++) {
+      const candidate = candidates[i];
+
+      if (value[candidate]) {
+        const directTarget = extractTtmlFromLocalizationItem(value[candidate]);
+        if (directTarget) {
+          return directTarget;
+        }
+      }
+    }
+
     const direct = extractTtmlFromLocalizationItem(value);
-    if (direct) return direct;
+    if (direct) {
+      return direct;
+    }
 
     const keys = Object.keys(value);
+    let fallback = "";
+
     for (let i = 0; i < keys.length; i++) {
-      const ttml = extractTtmlFromLocalizationItem(value[keys[i]]);
-      if (ttml) return ttml;
+      const key = keys[i];
+      const ttml = extractTtmlFromLocalizationItem(value[key]);
+
+      if (!ttml) {
+        continue;
+      }
+
+      if (candidates.indexOf(key) >= 0) {
+        return ttml;
+      }
+
+      if (!fallback) {
+        fallback = ttml;
+      }
     }
+
+    return fallback;
   }
 
   return "";
+}
+
+function getLocalizationLocale(item) {
+  if (!item || typeof item !== "object") {
+    return "";
+  }
+
+  return String(
+    item.locale ||
+    item.language ||
+    item.languageTag ||
+    item.lang ||
+    item.id ||
+    ""
+  );
 }
 
 function extractTtmlFromLocalizationItem(item) {
@@ -341,9 +431,9 @@ function extractTtmlFromLocalizationItem(item) {
     ""
   );
 }
-function getOfficialTtml(song) {
-  const relationships = song.relationships || {};
 
+function getOfficialTtml(song, language) {
+  const relationships = song.relationships || {};
   const preferredKeys = ["syllable-lyrics", "lyrics"];
 
   for (let i = 0; i < preferredKeys.length; i++) {
@@ -355,7 +445,7 @@ function getOfficialTtml(song) {
 
     const attrs = data[0].attributes || {};
 
-    const localizedTtml = pickTtmlLocalization(attrs);
+    const localizedTtml = pickTtmlLocalization(attrs, language);
     if (localizedTtml) {
       logApple("official lyrics using relationship=" + key + " field=ttmlLocalizations");
       return {
@@ -388,6 +478,7 @@ function getOfficialTtml(song) {
     ttml: ""
   };
 }
+
 function getOfficialLyrics(request, appleId, song) {
   const developerToken = getDeveloperToken();
 
@@ -403,15 +494,25 @@ function getOfficialLyrics(request, appleId, song) {
     return null;
   }
 
-  const region = configValue(request, "region", "zh-CN");
+  const region = appleRequestRegion(request);
+  const language = appleRequestLanguage(request);
 
   const url = "https://amp-api.music.apple.com/v1/catalog/" + storefront(region) + "/songs/" + encodeURIComponent(appleId)
     + "?include=syllable-lyrics,lyrics"
     + "&extend=ttmlLocalizations"
-    + "&l=" + encodeURIComponent(region)
+    + "&l=" + encodeURIComponent(language)
     + "&platform=web";
 
-  logApple("official lyrics request appleId=" + appleId + " region=" + region + " url=" + url);
+  logApple(
+    "official lyrics request appleId=" +
+      appleId +
+      " region=" +
+      region +
+      " language=" +
+      language +
+      " url=" +
+      url
+  );
 
   const raw = appleGet(url, developerToken, mediaUserToken);
 
@@ -424,7 +525,7 @@ function getOfficialLyrics(request, appleId, song) {
       previewText(raw, 1500)
   );
 
-  return parseOfficialLyrics(raw, song);
+  return parseOfficialLyrics(raw, song, request);
 }
 
 function getLyrics(request) {

@@ -8,6 +8,7 @@ const APPLE_LOG_TAG = "AppleSourcePlugin";
 
 let cachedDeveloperToken = "";
 let cachedLyricoUserAgent = "";
+let cachedRuntimeInfo = null;
 
 function logApple(message) {
   if (Platform.log && Platform.log.debug) {
@@ -58,13 +59,375 @@ function configValue(request, key, fallback) {
   return value;
 }
 
+function getRuntimeInfoSafe() {
+  if (cachedRuntimeInfo) {
+    return cachedRuntimeInfo;
+  }
+
+  try {
+    if (Platform.runtime && Platform.runtime.getInfo) {
+      cachedRuntimeInfo = Platform.runtime.getInfo() || {};
+      return cachedRuntimeInfo;
+    }
+  } catch (e) {
+    warnApple("runtime.getInfo failed: " + String(e && e.message ? e.message : e));
+  }
+
+  cachedRuntimeInfo = {};
+  return cachedRuntimeInfo;
+}
+
+function hasHostApi(name) {
+  try {
+    const info = getRuntimeInfoSafe();
+    const apis = info.supportedHostApis || [];
+    return apis.indexOf(name) >= 0;
+  } catch (e) {
+    return false;
+  }
+}
+
+function hasXmlHostApi() {
+  return !!(
+    Platform.xml &&
+    Platform.xml.getRootAttributes &&
+    Platform.xml.findElements &&
+    Platform.xml.replaceChildrenByAttr &&
+    Platform.xml.removeElements &&
+    hasHostApi("xml.getRootAttributes") &&
+    hasHostApi("xml.findElements") &&
+    hasHostApi("xml.replaceChildrenByAttr") &&
+    hasHostApi("xml.removeElements")
+  );
+}
+
 function storefront(region) {
-  if (region === "zh-CN") return "cn";
-  if (region === "ja-JP") return "jp";
-  if (region === "ko-KR") return "kr";
-  if (region === "en-US") return "us";
-  if (region === "tr-TR") return "tr";
+  const value = String(region || "").trim();
+
+  if (value === "cn" || value === "zh-CN" || value === "zh-Hans" || value === "zh-Hans-CN") return "cn";
+  if (value === "us" || value === "en-US" || value === "en") return "us";
+  if (value === "jp" || value === "ja-JP" || value === "ja") return "jp";
+  if (value === "kr" || value === "ko-KR" || value === "ko") return "kr";
+  if (value === "tr" || value === "tr-TR" || value === "tr") return "tr";
+  if (value === "hk" || value === "zh-HK") return "hk";
+  if (value === "tw" || value === "zh-TW" || value === "zh-Hant" || value === "zh-Hant-TW") return "tw";
+
   return "us";
+}
+
+function normalizeAppleLanguage(language) {
+  const value = String(language || "").trim();
+
+  if (!value) return "";
+
+  if (value === "zh-CN" || value === "zh-Hans-CN") return "zh-Hans";
+  if (value === "zh-TW" || value === "zh-HK" || value === "zh-Hant-TW" || value === "zh-Hant-HK") return "zh-Hant";
+  if (value === "en-US" || value === "en-GB") return "en";
+  if (value === "ja-JP") return "ja";
+  if (value === "ko-KR") return "ko";
+  if (value === "tr-TR") return "tr";
+
+  return value;
+}
+
+function appleLanguageCandidates(language) {
+  const value = String(language || "").trim();
+  const normalized = normalizeAppleLanguage(value);
+
+  if (normalized === "zh-Hans") {
+    return ["zh-Hans", "zh-Hans-CN", "zh-CN"];
+  }
+
+  if (normalized === "zh-Hant") {
+    return ["zh-Hant", "zh-Hant-TW", "zh-Hant-HK", "zh-TW", "zh-HK"];
+  }
+
+  if (normalized === "en") {
+    return ["en", "en-US", "en-GB"];
+  }
+
+  if (normalized === "ja") {
+    return ["ja", "ja-JP"];
+  }
+
+  if (normalized === "ko") {
+    return ["ko", "ko-KR"];
+  }
+
+  if (normalized === "tr") {
+    return ["tr", "tr-TR"];
+  }
+
+  return value ? [value] : [];
+}
+
+function appleLanguageFamily(language) {
+  const normalized = normalizeAppleLanguage(language);
+
+  if (normalized === "zh-Hans" || normalized === "zh-Hant") {
+    return "zh";
+  }
+
+  if (normalized.indexOf("-") > 0) {
+    return normalized.split("-")[0];
+  }
+
+  return normalized;
+}
+
+function isSameAppleLanguageFamily(left, right) {
+  const a = appleLanguageFamily(left);
+  const b = appleLanguageFamily(right);
+
+  return !!a && !!b && a === b;
+}
+
+function shouldApplyAppleTranslationAsReplacement(type, sourceLanguage, translationLanguage) {
+  const value = String(type || "").trim();
+
+  if (value === "replacement") {
+    return true;
+  }
+
+  if (value === "subtitle") {
+    return false;
+  }
+
+  /*
+   * Apple 有些中文 TTML 会把 zh-Hans 放在 translation 中但不标 type。
+   * 这种只能在同语言族时当作本地化 replacement。
+   * 不能把英文歌的 zh-Hans subtitle 当正文替换。
+   */
+  return isSameAppleLanguageFamily(sourceLanguage, translationLanguage);
+}
+
+function findAppleTranslations(ttml, language) {
+  if (!hasXmlHostApi()) {
+    warnApple("xml host api is unavailable, skip Apple TTML localization");
+    return [];
+  }
+
+  const candidates = appleLanguageCandidates(language);
+  const results = [];
+
+  for (let i = 0; i < candidates.length; i++) {
+    const lang = candidates[i];
+
+    try {
+      const items = Platform.xml.findElements(ttml, {
+        tag: "translation",
+        attrs: {
+          "xml:lang": lang
+        }
+      }) || [];
+
+      for (let j = 0; j < items.length; j++) {
+        results.push(items[j]);
+      }
+    } catch (e) {
+      warnApple(
+        "xml.findElements translation failed language=" +
+          lang +
+          " error=" +
+          String(e && e.message ? e.message : e)
+      );
+    }
+  }
+
+  return results;
+}
+
+function findBestAppleTranslation(ttml, language) {
+  if (!hasXmlHostApi()) {
+    return null;
+  }
+
+  let sourceLanguage = "";
+
+  try {
+    const rootAttrs = Platform.xml.getRootAttributes(ttml) || {};
+    sourceLanguage = String(rootAttrs["xml:lang"] || rootAttrs.lang || "");
+  } catch (e) {
+    warnApple("xml.getRootAttributes failed: " + String(e && e.message ? e.message : e));
+  }
+
+  const translations = findAppleTranslations(ttml, language);
+
+  for (let i = 0; i < translations.length; i++) {
+    const item = translations[i] || {};
+    const attrs = item.attrs || {};
+    const lang = String(attrs["xml:lang"] || attrs.lang || "");
+    const type = String(attrs.type || "");
+
+    if (shouldApplyAppleTranslationAsReplacement(type, sourceLanguage, lang)) {
+      return {
+        node: item,
+        sourceLanguage: sourceLanguage,
+        language: lang,
+        type: type
+      };
+    }
+  }
+
+  return null;
+}
+
+function appleTranslationToReplacementMap(translation) {
+  const replacements = {};
+  const children = (translation && translation.children) || [];
+
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i] || {};
+
+    if (child.tag !== "text") {
+      continue;
+    }
+
+    const attrs = child.attrs || {};
+    const key = String(attrs["for"] || "");
+
+    if (!key) {
+      continue;
+    }
+
+    const innerXml = String(child.innerXml || "");
+    const text = String(child.text || "");
+
+    if (innerXml.indexOf("<span") >= 0) {
+      replacements[key] = {
+        mode: "xml",
+        value: innerXml
+      };
+    } else {
+      replacements[key] = {
+        mode: "text",
+        value: text
+      };
+    }
+  }
+
+  return replacements;
+}
+
+function removeAppliedAppleReplacementTranslations(ttml, language, appliedTranslation) {
+  if (!hasXmlHostApi() || !appliedTranslation) {
+    return ttml;
+  }
+
+  const appliedLanguage = String(appliedTranslation.language || language || "");
+  const appliedType = String(appliedTranslation.type || "");
+  const sourceLanguage = String(appliedTranslation.sourceLanguage || "");
+
+  /*
+   * 如果是明确 type="replacement"，只删 replacement，不碰 subtitle。
+   */
+  if (appliedType === "replacement") {
+    return Platform.xml.removeElements(ttml, {
+      tag: "translation",
+      attrs: {
+        "xml:lang": appliedLanguage,
+        type: "replacement"
+      }
+    });
+  }
+
+  /*
+   * 如果 type 缺失，只在同语言族 replacement 且同语言下没有 subtitle 时，
+   * 才删除这个语言的 translation，避免原文和翻译重复。
+   */
+  if (appliedType === "" && isSameAppleLanguageFamily(sourceLanguage, appliedLanguage)) {
+    const sameLanguageTranslations = findAppleTranslations(ttml, appliedLanguage);
+    let hasSubtitle = false;
+    let hasNonApplicable = false;
+
+    for (let i = 0; i < sameLanguageTranslations.length; i++) {
+      const attrs = (sameLanguageTranslations[i] && sameLanguageTranslations[i].attrs) || {};
+      const type = String(attrs.type || "");
+      const lang = String(attrs["xml:lang"] || attrs.lang || "");
+
+      if (type === "subtitle") {
+        hasSubtitle = true;
+      }
+
+      if (!shouldApplyAppleTranslationAsReplacement(type, sourceLanguage, lang)) {
+        hasNonApplicable = true;
+      }
+    }
+
+    if (!hasSubtitle && !hasNonApplicable) {
+      return Platform.xml.removeElements(ttml, {
+        tag: "translation",
+        attrs: {
+          "xml:lang": appliedLanguage
+        }
+      });
+    }
+  }
+
+  return ttml;
+}
+
+function applyAppleOfficialLocalizationToTtml(ttml, language) {
+  let xml = String(ttml || "");
+
+  if (!xml) {
+    return "";
+  }
+
+  if (!hasXmlHostApi()) {
+    return xml;
+  }
+
+  const translation = findBestAppleTranslation(xml, language);
+
+  if (!translation) {
+    return xml;
+  }
+
+  const replacements = appleTranslationToReplacementMap(translation.node);
+  const keys = Object.keys(replacements);
+
+  if (!keys.length) {
+    return xml;
+  }
+
+  const outputLanguage = appleLanguageCandidates(language)[0] || String(language || "");
+
+  try {
+    xml = Platform.xml.replaceChildrenByAttr(xml, {
+      targetTag: "p",
+      keyAttr: "itunes:key",
+      replacements: replacements,
+      rootAttributes: outputLanguage
+        ? {
+            "xml:lang": outputLanguage
+          }
+        : {}
+    });
+
+    xml = removeAppliedAppleReplacementTranslations(xml, outputLanguage, translation);
+
+    logApple(
+      "official lyrics applied Apple localization language=" +
+        outputLanguage +
+        " sourceLanguage=" +
+        String(translation.sourceLanguage || "") +
+        " translationLanguage=" +
+        String(translation.language || "") +
+        " type=" +
+        String(translation.type || "") +
+        " count=" +
+        String(keys.length)
+    );
+
+    return xml;
+  } catch (e) {
+    warnApple(
+      "apply Apple TTML localization failed: " +
+        String(e && e.message ? e.message : e)
+    );
+    return String(ttml || "");
+  }
 }
 
 function getDeveloperToken() {

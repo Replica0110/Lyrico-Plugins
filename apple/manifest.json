@@ -6,16 +6,10 @@
   "author": "Replica0110",
   "description": "Apple Music 搜索源插件",
   "apiVersion": 1,
-  "includeDirs": [
-    "lib"
-  ],
+  "includeDirs": ["lib"],
   "icon": "icon.png",
   "entry": "source.js",
-  "capabilities": [
-    "searchSongs",
-    "getLyrics",
-    "searchCovers"
-  ],
+  "capabilities": ["searchSongs", "getLyrics", "searchCovers"],
   "configFields": [
     {
       "key": "lyrics_provider_notice",
@@ -59,35 +53,86 @@
     {
       "key": "region",
       "title": "地区",
-      "summary": "用于 Apple Music 请求的语言/地区参数",
+      "summary": "用于 Apple Music catalog storefront，例如 cn/us/jp。需要和 media-user-token 所属地区匹配",
       "group": "请求",
       "type": "dropdown",
       "required": true,
-      "defaultValue": "zh-CN",
+      "defaultValue": "cn",
       "options": [
         {
-          "value": "zh-CN",
+          "value": "cn",
           "label": "中国大陆",
-          "summary": "zh-CN"
+          "summary": "cn"
+        },
+        {
+          "value": "us",
+          "label": "美国",
+          "summary": "us"
+        },
+        {
+          "value": "jp",
+          "label": "日本",
+          "summary": "jp"
+        },
+        {
+          "value": "kr",
+          "label": "韩国",
+          "summary": "kr"
+        },
+        {
+          "value": "tr",
+          "label": "土耳其",
+          "summary": "tr"
+        },
+        {
+          "value": "hk",
+          "label": "香港",
+          "summary": "hk"
+        },
+        {
+          "value": "tw",
+          "label": "台湾",
+          "summary": "tw"
+        }
+      ]
+    },
+    {
+      "key": "language",
+      "title": "语言",
+      "summary": "用于 Apple Music localization 参数",
+      "group": "请求",
+      "type": "dropdown",
+      "required": true,
+      "defaultValue": "zh-Hans",
+      "options": [
+        {
+          "value": "zh-Hans",
+          "label": "简体中文",
+          "summary": "zh-Hans"
+        },
+        {
+          "value": "zh-Hant",
+          "label": "繁体中文",
+          "summary": "zh-Hant"
         },
         {
           "value": "en-US",
-          "label": "美国",
+          "label": "English",
           "summary": "en-US"
         },
         {
           "value": "ja-JP",
-          "label": "日本",
+          "label": "日本語",
           "summary": "ja-JP"
         },
         {
           "value": "ko-KR",
-          "label": "韩国",
+          "label": "한국어",
           "summary": "ko-KR"
         },
         {
           "value": "tr-TR",
-          "label": "土耳其",
+          "label": "Türkçe",
           "summary": "tr-TR"
         }
       ]
