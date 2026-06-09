@@ -38,12 +38,16 @@ function mapSong(item, request) {
   if (subtitle) fields.comment = String(subtitle);
 
   if (item.volume) {
-    const gain = formatFixed(item.volume.gain, 3, " dB");
-    const peak = formatFixed(item.volume.peak, 6, "");
-    const lra = formatFixed(item.volume.lra, 3, " LU");
-    if (gain) fields.replaygain_track_gain = gain;
-    if (peak) fields.replaygain_track_peak = peak;
-    fields.replaygain_reference_loudness = "-18 LUFS";
+    const cfg = request.config || {};
+    const rgOff = cfg.replaygain === false || cfg.replaygain === "false";
+    if (!rgOff) {
+      const gain = formatFixed(item.volume.gain, 3, " dB");
+      const peak = formatFixed(item.volume.peak, 6, "");
+      const lra = formatFixed(item.volume.lra, 3, " LU");
+      if (gain) fields.replaygain_track_gain = gain;
+      if (peak) fields.replaygain_track_peak = peak;
+      fields.replaygain_reference_loudness = "-18 LUFS";
+    }
   }
 
   return {

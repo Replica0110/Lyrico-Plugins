@@ -1,8 +1,8 @@
 {
   "id": "com.qqmusic.source",
   "name": "QQ音乐",
-  "versionCode": 2,
-  "versionName": "0.1.1",
+  "versionCode": 3,
+  "versionName": "0.1.2",
   "author": "Replica0110",
   "description": "QQ音乐搜索源插件",
   "apiVersion": 1,
@@ -38,6 +38,13 @@
           "label": "1200 x 1200"
         }
       ]
+    },
+    {
+      "key": "replaygain",
+      "title": "回放增益",
+      "summary": "搜索歌曲时获取回放增益信息",
+      "type": "switch",
+      "defaultValue": true
     }
   ],
   "minHostApiVersion": 1
