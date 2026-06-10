@@ -1,8 +1,8 @@
 {
   "id": "com.sodamusic.source",
   "name": "汽水音乐",
-  "versionCode": 2,
-  "versionName": "0.1.1",
+  "versionCode": 4,
+  "versionName": "0.2.0",
   "author": "Replica0110",
   "description": "汽水音乐搜索源插件",
   "apiVersion": 1,
