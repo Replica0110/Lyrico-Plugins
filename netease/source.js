@@ -111,11 +111,32 @@ function build163Key(song) {
     return "";
   }
 }
+function getCommentContentMode(request) {
+  const config = request && request.config ? request.config : {};
+  return String(config.comment_content || "alias");
+}
 
+function buildCommentField(song, request) {
+  const mode = getCommentContentMode(request);
+  const aliases = getAliases(song);
+
+  if (mode === "none") {
+    return "";
+  }
+
+  if (mode === "alias") {
+    return aliases.length ? aliases.join(" / ") : "";
+  }
+
+  if (mode === "netease_163_key") {
+    return build163Key(song);
+  }
+
+  return "";
+}
 function mapSong(song, request) {
   const artists = getArtists(song);
   const album = getAlbum(song);
-  const aliases = getAliases(song);
 
   const picUrl = String(album.picUrl || "").replace("http:", "https:");
   const artistText = artists
@@ -135,13 +156,10 @@ function mapSong(song, request) {
     cover_url: picUrl
   };
 
-  if (aliases.length) {
-    fields.comment = aliases.join(" / ");
+  const comment = buildCommentField(song, request);
+  if (comment) {
+    fields.comment = comment;
   }
-
-  const key = build163Key(song);
-  const internal = {};
-  if (key) internal.netease_163_key = key;
 
   return {
     id: String(song.id || ""),
@@ -151,10 +169,10 @@ function mapSong(song, request) {
     duration: getSongDuration(song),
     date: fields.date,
     trackNumber: fields.track_number,
-    discNumber:fields.disc_number,
+    discNumber: fields.disc_number,
     picUrl: picUrl,
     fields: fields,
-    internal: internal
+    internal: {}
   };
 }
 
