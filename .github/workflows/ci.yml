@@ -14,12 +14,6 @@ jobs:
         with:
           path: plugins
 
-      - name: Checkout Lyrico devkit
-        uses: actions/checkout@v4
-        with:
-          repository: Replica0110/Lyrico
-          path: Lyrico
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -27,7 +21,7 @@ jobs:
 
       - name: Package and test plugins
         working-directory: plugins
-        run: node scripts/plugin-ci.mjs --devkit ../Lyrico/tools/plugin-devkit/src/cli.js --out dist/plugins --importable-out dist/importable
+        run: node scripts/plugin-ci.mjs --out dist/plugins --importable-out dist/importable
 
       - name: Upload importable plugin bundle
         uses: actions/upload-artifact@v4

@@ -30,12 +30,6 @@ jobs:
         with:
           path: plugins
 
-      - name: Checkout Lyrico devkit
-        uses: actions/checkout@v4
-        with:
-          repository: Replica0110/Lyrico
-          path: Lyrico
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -43,7 +37,7 @@ jobs:
 
       - name: Build release packages
         working-directory: plugins
-        run: node scripts/package-release.mjs --devkit ../Lyrico/tools/plugin-devkit/src/cli.js --out dist/release
+        run: node scripts/package-release.mjs --out dist/release
 
       - name: Create or update GitHub release
         working-directory: plugins

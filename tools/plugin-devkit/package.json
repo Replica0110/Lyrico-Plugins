@@ -1,0 +1,20 @@
+{
+  "name": "@lyrico/plugin-devkit",
+  "version": "0.1.0",
+  "description": "Desktop validation and debugging tools for Lyrico source plugins",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "lyrico-plugin": "./bin/lyrico-plugin.js"
+  },
+  "scripts": {
+    "validate": "node ./src/cli.js validate",
+    "inspect": "node ./src/cli.js inspect",
+    "test": "node ./src/cli.js test",
+    "pack": "node ./src/cli.js pack"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

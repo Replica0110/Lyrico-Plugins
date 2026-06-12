@@ -4,7 +4,7 @@ import { spawn } from 'node:child_process';
 
 const args = parseArgs(process.argv.slice(2));
 const root = path.resolve(args.root ?? '.');
-const devkit = path.resolve(args.devkit ?? '../Lyrico/tools/plugin-devkit/src/cli.js');
+const devkit = path.resolve(args.devkit ?? 'tools/plugin-devkit/src/cli.js');
 const outDir = path.resolve(args.out ?? 'dist/plugins');
 const importableOutDir = args.importableOut
   ? path.resolve(args.importableOut)
