@@ -430,6 +430,92 @@ function applyAppleOfficialLocalizationToTtml(ttml, language) {
   }
 }
 
+const APPLE_WEBPLAY_KID = "WebPlayKid";
+const APPLE_WEBPLAY_ISS = "AMPWebPlay";
+
+function decodeJwtJson(part) {
+  return JSON.parse(
+    Platform.base64.decodeUrlText(part)
+  );
+}
+
+function parseJwt(token) {
+  const parts = String(token || "").split(".");
+  if (parts.length !== 3) {
+    return null;
+  }
+
+  try {
+    return {
+      token: token,
+      header: decodeJwtJson(parts[0]),
+      payload: decodeJwtJson(parts[1]),
+      signature: parts[2]
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+function isWebPlayDeveloperToken(jwt) {
+  if (!jwt || !jwt.header || !jwt.payload) {
+    return false;
+  }
+
+  const header = jwt.header;
+  const payload = jwt.payload;
+  const now = Math.floor(Date.now() / 1000);
+
+  if (header.kid !== APPLE_WEBPLAY_KID) {
+    return false;
+  }
+
+  if (payload.iss !== APPLE_WEBPLAY_ISS) {
+    return false;
+  }
+
+  if (header.alg !== "ES256") {
+    return false;
+  }
+
+  if (typeof payload.iat !== "number") {
+    return false;
+  }
+
+  if (typeof payload.exp !== "number") {
+    return false;
+  }
+
+  if (payload.exp <= now) {
+    return false;
+  }
+
+  return true;
+}
+
+function findWebPlayDeveloperTokens(js) {
+  const text = String(js || "");
+  const regex = /(?:^|[^A-Za-z0-9_-])([A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,})(?![A-Za-z0-9_-])/g;
+
+  const result = [];
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    const token = match[1];
+    const jwt = parseJwt(token);
+
+    if (isWebPlayDeveloperToken(jwt)) {
+      result.push(jwt);
+    }
+  }
+
+  result.sort(function (a, b) {
+    return Number(b.payload.exp || 0) - Number(a.payload.exp || 0);
+  });
+
+  return result;
+}
+
 function getDeveloperToken() {
   if (cachedDeveloperToken) {
     return cachedDeveloperToken;
@@ -476,17 +562,30 @@ function getDeveloperToken() {
 
   logApple("index js response length=" + String(js.length));
 
-  const tokenMatch = String(js).match(/eyJh[^"']*/);
-  cachedDeveloperToken = tokenMatch ? String(tokenMatch[0]) : "";
+  const candidates = findWebPlayDeveloperTokens(js);
 
-  logApple(
-    "developer token found=" +
-      String(!!cachedDeveloperToken) +
-      " tokenLength=" +
-      String(cachedDeveloperToken.length)
-  );
+  logApple("webplay developer token candidates=" + String(candidates.length));
 
-  return cachedDeveloperToken;
+  if (candidates.length > 0) {
+    const selected = candidates[0];
+
+    cachedDeveloperToken = selected.token;
+
+    logApple(
+      "developer token selected=true" +
+        " kid=" + String(selected.header.kid) +
+        " iss=" + String(selected.payload.iss) +
+        " iat=" + String(selected.payload.iat) +
+        " exp=" + String(selected.payload.exp) +
+        " tokenLength=" + String(cachedDeveloperToken.length)
+    );
+
+    return cachedDeveloperToken;
+  }
+
+  warnApple("WebPlay developer token not found: kid=WebPlayKid iss=AMPWebPlay");
+  cachedDeveloperToken = "";
+  return "";
 }
 
 function appleGet(url, developerToken, mediaUserToken) {

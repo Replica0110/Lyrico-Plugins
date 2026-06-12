@@ -1,8 +1,8 @@
 {
   "id": "com.applemusic.source",
   "name": "Apple Music",
-  "versionCode": 4,
-  "versionName": "0.2.0",
+  "versionCode": 5,
+  "versionName": "0.2.1",
   "author": "Replica0110",
   "description": "Apple Music 搜索源插件",
   "apiVersion": 1,
@@ -161,5 +161,5 @@
       ]
     }
   ],
-  "minHostApiVersion": 1
+  "minHostApiVersion": 2
 }
