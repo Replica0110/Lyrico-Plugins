@@ -69,9 +69,9 @@ console.log(`Packed ${plugins.length} plugin zips and ${result.entries} all-plug
 
 function buildReleaseNotes(packagedPlugins, assets) {
   const lines = [
-    `Generated ${packagedPlugins.length} Lyrico plugin package${packagedPlugins.length === 1 ? '' : 's'} from manifest.json discovery.`,
+    `从 manifest.json 发现并生成了 ${packagedPlugins.length} 个 Lyrico 插件包。`,
     '',
-    '## Plugins'
+    '## 插件'
   ];
 
   for (const plugin of packagedPlugins) {
@@ -81,24 +81,24 @@ function buildReleaseNotes(packagedPlugins, assets) {
       .join(', ');
     const capabilities = Array.isArray(manifest.capabilities) && manifest.capabilities.length > 0
       ? manifest.capabilities.join(', ')
-      : 'none declared';
+      : '未声明';
     const description = singleLine(manifest.description);
 
-    lines.push(`- ${singleLine(manifest.name)} (${manifest.id}) ${version ? `v${version}` : 'version not declared'}`);
-    if (description) lines.push(`  - Description: ${description}`);
-    lines.push(`  - Capabilities: ${capabilities}`);
-    lines.push(`  - Package: ${plugin.asset}`);
+    lines.push(`- ${singleLine(manifest.name)} (${manifest.id}) ${version ? `v${version}` : '版本未声明'}`);
+    if (description) lines.push(`  - 描述: ${description}`);
+    lines.push(`  - 能力: ${capabilities}`);
+    lines.push(`  - 包名: ${plugin.asset}`);
   }
 
   lines.push(
     '',
-    '## Assets',
-    `- Lyrico-Plugins.zip: bundle containing all ${packagedPlugins.length} plugin director${packagedPlugins.length === 1 ? 'y' : 'ies'}.`,
-    '- release-manifest.json: machine-readable package metadata.'
+    '## 产物',
+    `- Lyrico-Plugins.zip: 包含全部 ${packagedPlugins.length} 个插件目录的聚合包。`,
+    '- release-manifest.json: 机器可读的包元数据。'
   );
 
   for (const asset of assets.filter(asset => asset.endsWith('.zip') && asset !== 'Lyrico-Plugins.zip')) {
-    lines.push(`- ${asset}: individual plugin package.`);
+    lines.push(`- ${asset}: 单个插件包。`);
   }
 
   return `${lines.join('\n')}\n`;
