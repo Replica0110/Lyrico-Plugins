@@ -5,11 +5,14 @@ const AES_163_KEY = "#14ljk_!\\]&0U<'(";
 const EAPI_KEY = "e82ckenh8dichen8";
 const APP_VER = "3.1.3.203419";
 const DEVICEID_XOR_KEY = "3go8&$8*3*3h0k(2)2";
+const NE_CACHE_KEY = "netease.anonymous.session";
+const NE_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 
 let DEVICE_ID = randomHex(32);
 let CLIENT_SIGN = generateClientSign();
 let neInitialized = false;
 let cookieJar = {};
+let neCacheDirty = false;
 let neOsVer = "Microsoft-Windows-10--build-" + randomIntRange(20000, 30000) + "-64bit";
 let neMode = randomItem([
   "MS-iCraft B760M WIFI",
@@ -94,7 +97,7 @@ function cookieString(extraCookies) {
 }
 
 function setCookieFromHeaders(headers) {
-  if (!headers) return;
+  if (!headers) return false;
 
   const setCookies =
     headers["Set-Cookie"] ||
@@ -103,6 +106,7 @@ function setCookieFromHeaders(headers) {
     [];
 
   const list = Array.isArray(setCookies) ? setCookies : [String(setCookies)];
+  const changedKeys = [];
 
   list.forEach(function (line) {
     if (!line) return;
@@ -115,9 +119,99 @@ function setCookieFromHeaders(headers) {
     const value = first.slice(index + 1).trim();
 
     if (key && value) {
+      if (cookieJar[key] !== value) {
+        changedKeys.push(key);
+      }
       cookieJar[key] = value;
     }
   });
+
+  if (changedKeys.length > 0) {
+    neCacheDirty = true;
+    Platform.log.debug("NE", "Response Set-Cookie changed keys=" + changedKeys.join(","));
+    return true;
+  }
+
+  return false;
+}
+
+function hasHostCache() {
+  return Platform.cache && typeof Platform.cache.get === "function" && typeof Platform.cache.set === "function";
+}
+
+function loadNeCache() {
+  if (!hasHostCache()) {
+    Platform.log.warn("NE", "Host cache API unavailable; anonymous login will not persist");
+    return false;
+  }
+
+  const text = Platform.cache.get(NE_CACHE_KEY);
+  if (!text) {
+    Platform.log.debug("NE", "Anonymous session cache miss");
+    return false;
+  }
+
+  try {
+    const state = JSON.parse(text);
+    const cookies = state && state.cookies ? state.cookies : {};
+    if (!cookies || Object.keys(cookies).length === 0) {
+      Platform.log.warn("NE", "Anonymous session cache has no cookies; ignoring");
+      return false;
+    }
+
+    DEVICE_ID = String(state.deviceId || cookies.deviceId || DEVICE_ID);
+    CLIENT_SIGN = String(state.clientSign || cookies.clientSign || CLIENT_SIGN);
+    neOsVer = String(state.osver || cookies.osver || neOsVer);
+    neMode = String(state.mode || cookies.mode || neMode);
+
+    cookieJar = {};
+    Object.keys(cookies).forEach(function (key) {
+      if (cookies[key] != null && String(cookies[key]).length > 0) {
+        cookieJar[key] = String(cookies[key]);
+      }
+    });
+
+    return Object.keys(cookieJar).length > 0;
+  } catch (e) {
+    Platform.log.warn(
+      "NE",
+      "Anonymous session cache invalid; clearing: " + String(e && e.message ? e.message : e)
+    );
+    Platform.cache.remove(NE_CACHE_KEY);
+    return false;
+  }
+}
+
+function saveNeCache() {
+  if (!hasHostCache()) return;
+
+  Platform.cache.set(
+    NE_CACHE_KEY,
+    JSON.stringify({
+      deviceId: DEVICE_ID,
+      clientSign: CLIENT_SIGN,
+      osver: neOsVer,
+      mode: neMode,
+      cookies: cookieJar || {}
+    }),
+    NE_CACHE_TTL_MS
+  );
+  neCacheDirty = false;
+  Platform.log.debug(
+    "NE",
+    "Anonymous session cache saved ttlMs=" +
+      String(NE_CACHE_TTL_MS) +
+      ", cookies=" +
+      Object.keys(cookieJar || {}).join(",")
+  );
+}
+
+function clearNeCache() {
+  if (Platform.cache && typeof Platform.cache.remove === "function") {
+    Platform.cache.remove(NE_CACHE_KEY);
+    neCacheDirty = false;
+    Platform.log.debug("NE", "Anonymous session cache cleared");
+  }
 }
 
 /*
@@ -444,6 +538,16 @@ function buildPreCookies() {
 function ensureNeInit() {
   if (neInitialized) return;
 
+  if (loadNeCache()) {
+    neCacheDirty = false;
+    neInitialized = true;
+    Platform.log.debug(
+      "NE",
+      "Anonymous session cache hit, cookies=" + Object.keys(cookieJar).join(",")
+    );
+    return;
+  }
+
   const preCookies = buildPreCookies();
 
   cookieJar = {};
@@ -494,6 +598,8 @@ function ensureNeInit() {
   }
 
   neInitialized = true;
+  neCacheDirty = true;
+  saveNeCache();
 
   Platform.log.debug(
     "NE",
@@ -538,7 +644,14 @@ function eapiRequest(path, params, encryptPath) {
   if (String(root.code) === "301" || String(root.code) === "401") {
     neInitialized = false;
     cookieJar = {};
+    clearNeCache();
     throw new Error("NE session invalid: " + raw.slice(0, 300));
+  }
+
+  if (neCacheDirty) {
+    saveNeCache();
+  } else {
+    Platform.log.debug("NE", "Anonymous session cache unchanged; skip save");
   }
 
   return root;

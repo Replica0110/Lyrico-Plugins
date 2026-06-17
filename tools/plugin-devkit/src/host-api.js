@@ -12,15 +12,20 @@ export function createHostApi(options = {}) {
     buildType: 'desktop-devkit',
     debug: true
   };
+  const cacheStore = new Map();
   const runtimeInfo = {
-    pluginApiVersion: 1,
-    hostApiVersion: 2,
+    pluginApiVersion: 3,
+    hostApiVersion: 3,
     engine: 'node-vm',
     engineVersion: process.version,
     supportedHostApis: [
       'app.info',
       'app.userAgent',
       'runtime.info',
+      'cache.get',
+      'cache.set',
+      'cache.remove',
+      'cache.clear',
       'crypto.md5',
       'crypto.aesEcbPkcs5EncryptBase64',
       'crypto.aesEcbPkcs5EncryptHex',
@@ -76,6 +81,18 @@ export function createHostApi(options = {}) {
       runtime: {
         getInfo: () => runtimeInfo
       },
+      cache: {
+        get: key => cacheGet(cacheStore, key),
+        set: (key, value, ttlMs) => cacheSet(cacheStore, key, value, ttlMs),
+        remove: key => {
+          cacheStore.delete(String(key || ''));
+          return '';
+        },
+        clear: () => {
+          cacheStore.clear();
+          return '';
+        }
+      },
       crypto: {
         md5: text => crypto.createHash('md5').update(String(text || ''), 'utf8').digest('hex'),
         aesEcbPkcs5EncryptBase64: (text, key) => aesEcb(text, key, 'base64'),
@@ -119,6 +136,25 @@ export function createHostApi(options = {}) {
       }
     }
   };
+}
+
+function cacheGet(cacheStore, key) {
+  const entry = cacheStore.get(String(key || ''));
+  if (!entry) return '';
+  if (entry.expiresAt > 0 && entry.expiresAt <= Date.now()) {
+    cacheStore.delete(String(key || ''));
+    return '';
+  }
+  return entry.value;
+}
+
+function cacheSet(cacheStore, key, value, ttlMs) {
+  const ttl = Number(ttlMs || 0);
+  cacheStore.set(String(key || ''), {
+    value: value == null ? '' : String(value),
+    expiresAt: ttl > 0 ? Date.now() + ttl : 0
+  });
+  return '';
 }
 
 function aesEcb(text, key, encoding) {

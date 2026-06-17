@@ -5,7 +5,7 @@
   "versionName": "0.2.0",
   "author": "Replica0110",
   "description": "酷狗搜索源插件",
-  "apiVersion": 1,
+  "apiVersion": 3,
   "includeDirs": [
     "lib"
   ],

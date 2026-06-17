@@ -432,6 +432,8 @@ function applyAppleOfficialLocalizationToTtml(ttml, language) {
 
 const APPLE_WEBPLAY_KID = "WebPlayKid";
 const APPLE_WEBPLAY_ISS = "AMPWebPlay";
+const APPLE_DEVELOPER_TOKEN_CACHE_KEY = "apple.webplay.developer_token";
+const APPLE_TOKEN_EXPIRY_SKEW_SECONDS = 60;
 
 function decodeJwtJson(part) {
   return JSON.parse(
@@ -516,9 +518,70 @@ function findWebPlayDeveloperTokens(js) {
   return result;
 }
 
+function hasAppleCache() {
+  return Platform.cache && typeof Platform.cache.get === "function" && typeof Platform.cache.set === "function";
+}
+
+function getCachedDeveloperToken() {
+  if (!hasAppleCache()) {
+    warnApple("host cache API unavailable; developer token will not persist");
+    return "";
+  }
+
+  const token = String(Platform.cache.get(APPLE_DEVELOPER_TOKEN_CACHE_KEY) || "").trim();
+  if (!token) {
+    logApple("developer token cache miss");
+    return "";
+  }
+
+  const jwt = parseJwt(token);
+  if (isWebPlayDeveloperToken(jwt)) {
+    cachedDeveloperToken = token;
+    logApple("developer token cache hit exp=" + String(jwt.payload.exp || ""));
+    return token;
+  }
+
+  if (Platform.cache && typeof Platform.cache.remove === "function") {
+    Platform.cache.remove(APPLE_DEVELOPER_TOKEN_CACHE_KEY);
+  }
+  warnApple("developer token cache invalid or expired; removed");
+  return "";
+}
+
+function saveDeveloperToken(token) {
+  if (!hasAppleCache()) return;
+
+  const jwt = parseJwt(token);
+  if (!isWebPlayDeveloperToken(jwt)) return;
+
+  const now = Math.floor(Date.now() / 1000);
+  const ttlSeconds = Number(jwt.payload.exp || 0) - now - APPLE_TOKEN_EXPIRY_SKEW_SECONDS;
+  if (ttlSeconds <= 0) {
+    warnApple("developer token cache skipped because ttlSeconds=" + String(ttlSeconds));
+    return;
+  }
+
+  Platform.cache.set(APPLE_DEVELOPER_TOKEN_CACHE_KEY, token, ttlSeconds * 1000);
+  logApple(
+    "developer token cache saved exp=" +
+      String(jwt.payload.exp || "") +
+      " ttlSeconds=" +
+      String(ttlSeconds)
+  );
+}
+
 function getDeveloperToken() {
   if (cachedDeveloperToken) {
-    return cachedDeveloperToken;
+    const jwt = parseJwt(cachedDeveloperToken);
+    if (isWebPlayDeveloperToken(jwt)) {
+      return cachedDeveloperToken;
+    }
+    cachedDeveloperToken = "";
+  }
+
+  const cached = getCachedDeveloperToken();
+  if (cached) {
+    return cached;
   }
 
   const homeUrl = "https://music.apple.com";
@@ -570,6 +633,7 @@ function getDeveloperToken() {
     const selected = candidates[0];
 
     cachedDeveloperToken = selected.token;
+    saveDeveloperToken(cachedDeveloperToken);
 
     logApple(
       "developer token selected=true" +

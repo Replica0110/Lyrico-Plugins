@@ -1,5 +1,5 @@
-export const PLUGIN_API_VERSION = 1;
-export const HOST_API_VERSION = 2;
+export const PLUGIN_API_VERSION = 3;
+export const HOST_API_VERSION = 3;
 
 export const CAPABILITIES = new Set([
   'searchSongs',
@@ -45,6 +45,10 @@ export const HOST_APIS = new Set([
   'app.info',
   'app.userAgent',
   'runtime.info',
+  'cache.get',
+  'cache.set',
+  'cache.remove',
+  'cache.clear',
   'crypto.md5',
   'crypto.aesEcbPkcs5EncryptBase64',
   'crypto.aesEcbPkcs5EncryptHex',
