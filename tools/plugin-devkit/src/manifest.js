@@ -3,7 +3,10 @@ import path from 'node:path';
 import {
   CAPABILITIES,
   CONFIG_FIELD_TYPES,
+  HOST_API_VERSION,
   LIMITS,
+  MIN_HOST_API_VERSION,
+  MIN_PLUGIN_API_VERSION,
   PLUGIN_API_VERSION
 } from './spec.js';
 import {
@@ -94,11 +97,27 @@ export function validateManifestShape(manifest, report = new Report()) {
   requireString(manifest, report, 'versionName');
   requirePositiveInt(manifest, report, 'versionCode');
   requirePositiveInt(manifest, report, 'apiVersion');
-  if (manifest.apiVersion !== undefined) {
-    if (manifest.apiVersion !== PLUGIN_API_VERSION) {
-      report.error('apiVersion does not match Lyrico plugin API', `expected ${PLUGIN_API_VERSION}, got ${manifest.apiVersion}`);
+  if (Number.isInteger(manifest.apiVersion) && manifest.apiVersion >= 1) {
+    if (manifest.apiVersion < MIN_PLUGIN_API_VERSION || manifest.apiVersion > PLUGIN_API_VERSION) {
+      report.error(
+        'apiVersion is not supported by this Lyrico host',
+        `supported ${MIN_PLUGIN_API_VERSION}..${PLUGIN_API_VERSION}, got ${manifest.apiVersion}`
+      );
     } else {
-      report.pass('apiVersion matches Lyrico plugin API', String(manifest.apiVersion));
+      report.pass('apiVersion is supported by this Lyrico host', String(manifest.apiVersion));
+    }
+  }
+
+  optionalPositiveInt(manifest, report, 'minHostApiVersion');
+  const minHostApiVersion = manifest.minHostApiVersion ?? MIN_HOST_API_VERSION;
+  if (Number.isInteger(minHostApiVersion) && minHostApiVersion >= 1) {
+    if (minHostApiVersion > HOST_API_VERSION) {
+      report.error(
+        'minHostApiVersion is newer than this Lyrico host',
+        `host ${HOST_API_VERSION}, got ${minHostApiVersion}`
+      );
+    } else {
+      report.pass('minHostApiVersion is supported by this Lyrico host', String(minHostApiVersion));
     }
   }
 
@@ -251,6 +270,12 @@ function optionalNullableString(obj, report, key) {
 function requirePositiveInt(obj, report, key) {
   if (!Number.isInteger(obj[key]) || obj[key] < 1) {
     report.error(`${key} is required and must be an integer >= 1`);
+  }
+}
+
+function optionalPositiveInt(obj, report, key) {
+  if (obj[key] !== undefined && (!Number.isInteger(obj[key]) || obj[key] < 1)) {
+    report.error(`${key} must be an integer >= 1`);
   }
 }
 

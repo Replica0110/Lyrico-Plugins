@@ -46,6 +46,8 @@ lyrico-plugin validate ./my-plugin
 - 运行结果中的 `fields` 是否只使用宿主标准字段
 - `internal` 是否满足数量和大小限制
 
+API 版本按向下兼容规则校验：当前宿主 API 3 接受 `apiVersion` 1、2、3；插件的 `minHostApiVersion` 不得高于当前宿主版本。
+
 `configFields` 支持 `text`、`password`、`number`、`switch`、`dropdown`、`textarea` 和只展示说明、不写入运行时配置的 `markdown` 类型。
 
 ### inspect

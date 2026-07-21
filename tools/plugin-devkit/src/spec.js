@@ -1,4 +1,6 @@
+export const MIN_PLUGIN_API_VERSION = 1;
 export const PLUGIN_API_VERSION = 3;
+export const MIN_HOST_API_VERSION = 1;
 export const HOST_API_VERSION = 3;
 
 export const CAPABILITIES = new Set([
