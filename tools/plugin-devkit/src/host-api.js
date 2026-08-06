@@ -14,7 +14,7 @@ export function createHostApi(options = {}) {
   };
   const cacheStore = new Map();
   const runtimeInfo = {
-    pluginApiVersion: 3,
+    pluginApiVersion: 4,
     hostApiVersion: 3,
     engine: 'node-vm',
     engineVersion: process.version,
@@ -52,6 +52,10 @@ export function createHostApi(options = {}) {
       'http.post',
       'http.getBytes',
       'http.postBytesResponse',
+      'xml.getRootAttributes',
+      'xml.findElements',
+      'xml.replaceChildrenByAttr',
+      'xml.removeElements',
       'log.debug',
       'log.warn',
       'log.error'
@@ -128,6 +132,12 @@ export function createHostApi(options = {}) {
         post: (url, body, httpOptions) => executeHttp('POST', url, body, httpOptions, false),
         getBytes: (url, httpOptions) => executeHttp('GET', url, null, httpOptions, true),
         postBytesResponse: (url, body, httpOptions) => executeHttp('POST', url, body, httpOptions, true)
+      },
+      xml: {
+        getRootAttributes: xml => getXmlRootAttributes(xml),
+        findElements: (xml, query) => findXmlElements(xml, query),
+        replaceChildrenByAttr: (xml, xmlOptions) => replaceXmlChildrenByAttr(xml, xmlOptions),
+        removeElements: (xml, query) => removeXmlElements(xml, query)
       },
       log: {
         debug: (tag, message) => normalizeLogCall(log, 'debug', tag, message),
@@ -271,4 +281,226 @@ function hasHeader(headers, target) {
 function headerString(value) {
   if (Array.isArray(value)) return value.join(', ');
   return String(value ?? '');
+}
+
+function getXmlRootAttributes(xml) {
+  return { ...parseXml(xml).attributes };
+}
+
+function findXmlElements(xml, query = {}) {
+  const root = parseXml(xml);
+  const matches = [];
+  walkXml(root, node => {
+    if (matchesXmlQuery(node, query)) {
+      matches.push(xmlNodeToObject(node));
+    }
+  });
+  return matches;
+}
+
+function replaceXmlChildrenByAttr(xml, options = {}) {
+  const original = String(xml ?? '');
+  const targetTag = String(options?.targetTag ?? '');
+  const keyAttr = String(options?.keyAttr ?? '');
+  if (!targetTag || !keyAttr) return original;
+
+  const root = parseXml(original);
+  const rootAttributes = isPlainObject(options.rootAttributes) ? options.rootAttributes : {};
+  for (const [name, value] of Object.entries(rootAttributes)) {
+    root.attributes[name] = value == null ? '' : String(value);
+  }
+
+  const replacements = isPlainObject(options.replacements) ? options.replacements : {};
+  walkXml(root, node => {
+    if (node.type !== 'element' || node.name !== targetTag) return;
+    const key = node.attributes[keyAttr] ?? '';
+    if (!key || !isPlainObject(replacements[key])) return;
+
+    const replacement = replacements[key];
+    const mode = String(replacement.mode ?? '') || 'text';
+    const value = replacement.value == null ? '' : String(replacement.value);
+    node.children = mode === 'xml'
+      ? parseXml(`<root>${value}</root>`).children
+      : [xmlTextNode(value)];
+  });
+  return serializeXml(root);
+}
+
+function removeXmlElements(xml, query = {}) {
+  const root = parseXml(xml);
+
+  function removeFrom(node) {
+    if (node.type !== 'element') return;
+    node.children = node.children.filter(child => {
+      if (child.type === 'element' && matchesXmlQuery(child, query)) return false;
+      removeFrom(child);
+      return true;
+    });
+  }
+
+  removeFrom(root);
+  walkXml(root, node => {
+    if (node.type === 'element' && node.name === 'translations') {
+      const hasElementChild = node.children.some(child => child.type === 'element');
+      if (!hasElementChild) node.children = [];
+    }
+  });
+  return serializeXml(root);
+}
+
+function parseXml(xml) {
+  const input = String(xml ?? '');
+  const tokenPattern = /<!\[CDATA\[[\s\S]*?\]\]>|<!--[\s\S]*?-->|<\?[\s\S]*?\?>|<\/[\s\S]*?>|<[^>]*>|[^<]+/g;
+  const stack = [];
+  let root = null;
+  let match;
+
+  while ((match = tokenPattern.exec(input)) !== null) {
+    const token = match[0];
+    if (token.startsWith('<!--') || token.startsWith('<?') || /^<!DOCTYPE/i.test(token)) {
+      continue;
+    }
+    if (token.startsWith('<![CDATA[')) {
+      if (stack.length > 0) {
+        stack.at(-1).children.push(xmlTextNode(token.slice(9, -3)));
+      }
+      continue;
+    }
+    if (token.startsWith('</')) {
+      const closingName = token.slice(2, -1).trim();
+      const current = stack.pop();
+      if (!current || current.name !== closingName) {
+        throw new Error(`Malformed XML: unexpected closing tag ${closingName}`);
+      }
+      continue;
+    }
+    if (token.startsWith('<!')) continue;
+    if (token.startsWith('<')) {
+      const selfClosing = /\/\s*>$/.test(token);
+      const body = token.slice(1, selfClosing ? token.lastIndexOf('/') : -1).trim();
+      const nameMatch = /^([^\s/>]+)/.exec(body);
+      if (!nameMatch) throw new Error('Malformed XML: missing element name');
+      const node = xmlElementNode(
+        nameMatch[1],
+        parseXmlAttributes(body.slice(nameMatch[0].length))
+      );
+      if (stack.length > 0) stack.at(-1).children.push(node);
+      else if (root == null) root = node;
+      else throw new Error('Malformed XML: multiple root elements');
+      if (!selfClosing) stack.push(node);
+      continue;
+    }
+    if (stack.length > 0 && token.length > 0) {
+      stack.at(-1).children.push(xmlTextNode(decodeXmlEntities(token)));
+    }
+  }
+
+  if (stack.length > 0) {
+    throw new Error(`Malformed XML: unclosed tag ${stack.at(-1).name}`);
+  }
+  return root ?? xmlElementNode('root');
+}
+
+function parseXmlAttributes(source) {
+  const attributes = {};
+  let rest = source;
+  while (rest.trim().length > 0) {
+    rest = rest.trimStart();
+    const nameMatch = /^([^\s=/>]+)/.exec(rest);
+    if (!nameMatch) throw new Error('Malformed XML: invalid attribute');
+    const name = nameMatch[1];
+    rest = rest.slice(nameMatch[0].length).trimStart();
+    if (!rest.startsWith('=')) throw new Error(`Malformed XML: missing value for attribute ${name}`);
+    rest = rest.slice(1).trimStart();
+    const quote = rest[0];
+    if (quote !== '"' && quote !== "'") {
+      throw new Error(`Malformed XML: attribute ${name} must be quoted`);
+    }
+    const end = rest.indexOf(quote, 1);
+    if (end < 0) throw new Error(`Malformed XML: unterminated attribute ${name}`);
+    attributes[name] = decodeXmlEntities(rest.slice(1, end));
+    rest = rest.slice(end + 1);
+  }
+  return attributes;
+}
+
+function matchesXmlQuery(node, query = {}) {
+  if (node.type !== 'element') return false;
+  const tag = String(query?.tag ?? '');
+  if (tag && node.name !== tag) return false;
+  const attrs = isPlainObject(query?.attrs) ? query.attrs : {};
+  return Object.entries(attrs).every(([name, value]) =>
+    node.attributes[name] === (value == null ? '' : String(value))
+  );
+}
+
+function xmlNodeToObject(node) {
+  return {
+    tag: node.name,
+    attrs: { ...node.attributes },
+    text: xmlTextContent(node),
+    innerXml: node.children.map(serializeXml).join(''),
+    children: node.children
+      .filter(child => child.type === 'element')
+      .map(xmlNodeToObject)
+  };
+}
+
+function xmlTextContent(node) {
+  if (node.type === 'text') return node.text;
+  return node.children.map(xmlTextContent).join('');
+}
+
+function walkXml(node, visitor) {
+  visitor(node);
+  if (node.type === 'element') {
+    node.children.forEach(child => walkXml(child, visitor));
+  }
+}
+
+function serializeXml(node) {
+  if (node.type === 'text') return escapeXmlText(node.text);
+  const attributes = Object.entries(node.attributes)
+    .map(([name, value]) => ` ${name}="${escapeXmlAttribute(value)}"`)
+    .join('');
+  if (node.children.length === 0) return `<${node.name}${attributes} />`;
+  return `<${node.name}${attributes}>${node.children.map(serializeXml).join('')}</${node.name}>`;
+}
+
+function xmlElementNode(name, attributes = {}) {
+  return { type: 'element', name, attributes, children: [] };
+}
+
+function xmlTextNode(text) {
+  return { type: 'text', text: String(text ?? '') };
+}
+
+function decodeXmlEntities(value) {
+  return String(value ?? '').replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (_, entity) => {
+    const normalized = entity.toLowerCase();
+    if (normalized === 'amp') return '&';
+    if (normalized === 'lt') return '<';
+    if (normalized === 'gt') return '>';
+    if (normalized === 'quot') return '"';
+    if (normalized === 'apos') return "'";
+    const codePoint = normalized.startsWith('#x')
+      ? Number.parseInt(normalized.slice(2), 16)
+      : Number.parseInt(normalized.slice(1), 10);
+    return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : _;
+  });
+}
+
+function escapeXmlText(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function escapeXmlAttribute(value) {
+  return escapeXmlText(value).replace(/"/g, '&quot;');
+}
+
+function isPlainObject(value) {
+  return value != null && typeof value === 'object' && !Array.isArray(value);
 }

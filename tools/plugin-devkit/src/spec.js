@@ -1,7 +1,7 @@
-export const MIN_PLUGIN_API_VERSION = 1;
-export const PLUGIN_API_VERSION = 3;
-export const MIN_HOST_API_VERSION = 1;
-export const HOST_API_VERSION = 3;
+export const MIN_PLUGIN_PROTOCOL_VERSION = 1;
+export const PLUGIN_PROTOCOL_VERSION = 4;
+export const MIN_PLATFORM_API_VERSION = 1;
+export const PLATFORM_API_VERSION = 3;
 
 export const CAPABILITIES = new Set([
   'searchSongs',
@@ -77,6 +77,10 @@ export const HOST_APIS = new Set([
   'http.post',
   'http.getBytes',
   'http.postBytesResponse',
+  'xml.getRootAttributes',
+  'xml.findElements',
+  'xml.replaceChildrenByAttr',
+  'xml.removeElements',
   'log.debug',
   'log.warn',
   'log.error'

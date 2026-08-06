@@ -1,6 +1,6 @@
 import { STANDARD_FIELD_KEYS } from './spec.js';
 
-export function parseSongResults(rawJson, plugin) {
+export function parseSongResults(rawJson, plugin, { requireId = true } = {}) {
   const root = parseJson(rawJson);
   const items = Array.isArray(root)
     ? root
@@ -8,8 +8,10 @@ export function parseSongResults(rawJson, plugin) {
 
   return items
     .filter(item => item && typeof item === 'object' && !Array.isArray(item))
-    .map(item => {
-      const id = firstString(item, ['id', 'songId', 'trackId']);
+    .map((item, index) => {
+      const picUrl = firstString(item, ['picUrl', 'coverUrl', 'cover_url', 'artworkUrl']) ?? '';
+      const id = firstString(item, ['id', 'songId', 'trackId'])
+        ?? (requireId ? null : picUrl || `${plugin.manifest.id}:cover:${index}`);
       if (!id) return null;
       const fieldResult = sanitizeFields(stringMap(firstObject(item, ['fields', 'metadata']) ?? {}));
       return {
@@ -20,15 +22,37 @@ export function parseSongResults(rawJson, plugin) {
         artist: firstString(item, ['artist', 'artists', 'singer']) ?? '',
         album: firstString(item, ['album', 'albumName']) ?? '',
         duration: firstNumber(item, ['duration', 'durationMs', 'duration_ms']) ?? 0,
-        date: firstString(item, ['date', 'releaseDate', 'release_date']) ?? '',
+        date: firstString(item, ['year', 'date', 'releaseDate', 'release_date']) ?? '',
         trackNumber: firstString(item, ['trackNumber', 'trackerNumber', 'track_number']) ?? '',
-        picUrl: firstString(item, ['picUrl', 'coverUrl', 'cover_url', 'artworkUrl']) ?? '',
+        picUrl,
         fields: fieldResult.fields,
         internal: sanitizeInternal(stringMap(firstObject(item, ['internal']) ?? {})),
         ignoredFields: fieldResult.ignoredFields
       };
     })
     .filter(Boolean);
+}
+
+export function parseLyricsCandidates(rawJson, plugin) {
+  const root = parseJson(rawJson);
+  if (root == null) return [];
+  const items = Array.isArray(root)
+    ? root
+    : firstArray(root, ['items', 'results', 'candidates']) ?? [root];
+
+  return items.map((item, index) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+    const lyrics = parseLyricsResult(JSON.stringify(item));
+    if (!lyrics) return null;
+    return {
+      id: `${plugin.manifest.id}:lyrics:${index}`,
+      title: lyrics.tags.ti ?? '',
+      artist: lyrics.tags.ar ?? '',
+      album: lyrics.tags.al ?? '',
+      date: lyrics.tags.date ?? '',
+      lyrics
+    };
+  }).filter(Boolean);
 }
 
 export function parseLyricsResult(rawJson) {
@@ -129,11 +153,25 @@ export function validateFunctionResult(functionName, rawJson, plugin) {
   }
 
   try {
+    const root = parseJson(rawJson);
+    if (isDoubleSerializedJson(root)) {
+      errors.push(
+        `${functionName} returned JSON.stringify(...) instead of a JavaScript value; ` +
+        'return the object, array, string, or null directly because the Lyrico host serializes the result'
+      );
+      return { parsed: null, warnings, errors };
+    }
     if (functionName === 'getLyrics') {
-      parsed = parseLyricsResult(rawJson);
-      if (parsed == null) warnings.push('getLyrics returned no usable lyrics');
+      if (plugin.manifest.apiVersion >= 4) {
+        parsed = parseLyricsCandidates(rawJson, plugin);
+        if (parsed.length === 0) warnings.push('getLyrics returned no usable lyrics candidates');
+        validateApi4JudgementFields(parsed, 'lyrics candidate', errors);
+      } else {
+        parsed = parseLyricsResult(rawJson);
+        if (parsed == null) warnings.push('getLyrics returned no usable lyrics');
+      }
     } else {
-      parsed = parseSongResults(rawJson, plugin);
+      parsed = parseSongResults(rawJson, plugin, { requireId: functionName === 'searchSongs' });
       if (parsed.length === 0) warnings.push(`${functionName} returned no parseable results`);
       for (const [index, item] of parsed.entries()) {
         if (!item.title) warnings.push(`result[${index}] has empty title`);
@@ -142,12 +180,36 @@ export function validateFunctionResult(functionName, rawJson, plugin) {
           warnings.push(`result[${index}] ignored unknown fields key "${key}"; platform-private values belong in internal`);
         }
       }
+      if (functionName === 'searchCovers' && plugin.manifest.apiVersion >= 4) {
+        validateApi4JudgementFields(parsed, 'cover result', errors);
+        parsed.forEach((item, index) => {
+          if (!item.picUrl) errors.push(`cover result[${index}] is missing cover URL`);
+        });
+      }
     }
   } catch (error) {
     errors.push(error.message);
   }
 
   return { parsed, warnings, errors };
+}
+
+function isDoubleSerializedJson(root) {
+  if (typeof root !== 'string') return false;
+  try {
+    const nested = JSON.parse(root);
+    return nested !== null && typeof nested === 'object';
+  } catch {
+    return false;
+  }
+}
+
+function validateApi4JudgementFields(items, label, errors) {
+  for (const [index, item] of items.entries()) {
+    for (const field of ['title', 'artist', 'album', 'date']) {
+      if (!item[field]) errors.push(`${label}[${index}] is missing ${field}`);
+    }
+  }
 }
 
 function sanitizeFields(fields) {

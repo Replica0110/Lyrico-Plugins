@@ -40,8 +40,9 @@ export async function createRuntime(plugin, options = {}) {
       const startedAt = performance.now();
       const raw = await fn.call(context, request);
       const durationMs = Math.round(performance.now() - startedAt);
+      const serialized = raw === undefined ? 'null' : JSON.stringify(raw);
       return {
-        raw: raw == null ? null : (typeof raw === 'string' ? raw : JSON.stringify(raw)),
+        raw: serialized === undefined ? 'null' : serialized,
         durationMs,
         logs: host.logs
       };

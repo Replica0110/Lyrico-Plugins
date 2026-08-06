@@ -3,11 +3,11 @@ import path from 'node:path';
 import {
   CAPABILITIES,
   CONFIG_FIELD_TYPES,
-  HOST_API_VERSION,
+  PLATFORM_API_VERSION,
   LIMITS,
-  MIN_HOST_API_VERSION,
-  MIN_PLUGIN_API_VERSION,
-  PLUGIN_API_VERSION
+  MIN_PLATFORM_API_VERSION,
+  MIN_PLUGIN_PROTOCOL_VERSION,
+  PLUGIN_PROTOCOL_VERSION
 } from './spec.js';
 import {
   directorySize,
@@ -98,10 +98,10 @@ export function validateManifestShape(manifest, report = new Report()) {
   requirePositiveInt(manifest, report, 'versionCode');
   requirePositiveInt(manifest, report, 'apiVersion');
   if (Number.isInteger(manifest.apiVersion) && manifest.apiVersion >= 1) {
-    if (manifest.apiVersion < MIN_PLUGIN_API_VERSION || manifest.apiVersion > PLUGIN_API_VERSION) {
+    if (manifest.apiVersion < MIN_PLUGIN_PROTOCOL_VERSION || manifest.apiVersion > PLUGIN_PROTOCOL_VERSION) {
       report.error(
         'apiVersion is not supported by this Lyrico host',
-        `supported ${MIN_PLUGIN_API_VERSION}..${PLUGIN_API_VERSION}, got ${manifest.apiVersion}`
+        `supported ${MIN_PLUGIN_PROTOCOL_VERSION}..${PLUGIN_PROTOCOL_VERSION}, got ${manifest.apiVersion}`
       );
     } else {
       report.pass('apiVersion is supported by this Lyrico host', String(manifest.apiVersion));
@@ -109,12 +109,12 @@ export function validateManifestShape(manifest, report = new Report()) {
   }
 
   optionalPositiveInt(manifest, report, 'minHostApiVersion');
-  const minHostApiVersion = manifest.minHostApiVersion ?? MIN_HOST_API_VERSION;
+  const minHostApiVersion = manifest.minHostApiVersion ?? MIN_PLATFORM_API_VERSION;
   if (Number.isInteger(minHostApiVersion) && minHostApiVersion >= 1) {
-    if (minHostApiVersion > HOST_API_VERSION) {
+    if (minHostApiVersion > PLATFORM_API_VERSION) {
       report.error(
         'minHostApiVersion is newer than this Lyrico host',
-        `host ${HOST_API_VERSION}, got ${minHostApiVersion}`
+        `host ${PLATFORM_API_VERSION}, got ${minHostApiVersion}`
       );
     } else {
       report.pass('minHostApiVersion is supported by this Lyrico host', String(minHostApiVersion));
@@ -128,10 +128,6 @@ export function validateManifestShape(manifest, report = new Report()) {
 
   validateStringArray(manifest, report, 'includeDirs');
   validateEnumArray(manifest, report, 'capabilities', CAPABILITIES);
-
-  if (Array.isArray(manifest.capabilities) && manifest.capabilities.length > 0 && !manifest.capabilities.includes('searchSongs')) {
-    report.error('source plugins must support searchSongs when capabilities are declared');
-  }
 
   validateConfigFields(manifest.configFields, report);
   warnRemovedManifestField(manifest, report, 'requiredHostApis');

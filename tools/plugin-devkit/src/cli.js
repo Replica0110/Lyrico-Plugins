@@ -161,24 +161,31 @@ async function buildRequest(functionName, flags, config) {
       config
     };
   }
-  if (functionName === 'searchCovers') {
-    return {
-      keyword: String(flags.keyword ?? ''),
-      pageSize: numberFlag(flags.pageSize, 5),
-      config
-    };
-  }
-
   let song = null;
   if (flags.song) {
     song = JSON.parse(await fs.promises.readFile(path.resolve(String(flags.song)), 'utf8'));
   } else if (flags.songJson) {
     song = JSON.parse(String(flags.songJson));
   }
+  if (functionName === 'searchCovers') {
+    const keyword = String(flags.keyword ?? [song?.title, song?.artist].filter(Boolean).join(' '));
+    return {
+      keyword,
+      ...(song ? { song } : {}),
+      page: numberFlag(flags.page, 1),
+      pageSize: numberFlag(flags.pageSize, 5),
+      config
+    };
+  }
   if (!song) {
     throw new Error('getLyrics requires --song <song.json> or --song-json <json>');
   }
-  return { song, config };
+  return {
+    song,
+    page: numberFlag(flags.page, 1),
+    pageSize: numberFlag(flags.pageSize, 20),
+    config
+  };
 }
 
 async function loadConfig(configPath) {
@@ -257,13 +264,13 @@ Usage:
 
 Test options:
   --keyword <text>          Keyword for searchSongs/searchCovers
-  --page <n>                Page for searchSongs
+  --page <n>                Page for searchSongs/getLyrics/searchCovers
   --page-size <n>           Page size
   --separator <text>        Artist separator for searchSongs
   --config <config.json>    Config map or { "config": { ... } }
   --case <case.json>        Test case file
-  --song <song.json>        Song object for getLyrics
-  --song-json <json>        Inline song object for getLyrics
+  --song <song.json>        Song object for getLyrics; optional for searchCovers
+  --song-json <json>        Inline song object for getLyrics; optional for searchCovers
   --logs                    Echo plugin logs while running
   --json                    Print machine-readable JSON
 `);

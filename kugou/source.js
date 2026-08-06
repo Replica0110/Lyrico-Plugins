@@ -44,14 +44,13 @@ function searchSongs(request) {
 function searchCovers(request) {
   return searchSongs({
     keyword: request.keyword,
-    page: 1,
+    page: request.page || 1,
     pageSize: request.pageSize || 5,
     separator: "/"
-  }).filter(song => song.picUrl);
+  }).filter(song => song.picUrl && song.title && song.artist && song.album && song.date);
 }
 
-function getLyrics(request) {
-  const song = request.song || {};
+function getLyricsForSong(request, song) {
   const internal = song.internal || {};
   const hash = internal.hash || "";
   if (!hash) return null;
@@ -89,4 +88,34 @@ function getLyrics(request) {
   parsed.tags.ar = parsed.tags.ar || song.artist || "";
   parsed.tags.al = parsed.tags.al || song.album || "";
   return parsed;
+}
+
+function getLyrics(request) {
+  const requestedSong = request.song || {};
+  const songs = requestedSong.id && requestedSong.id !== "local-song"
+    ? [requestedSong]
+    : searchSongs({
+        keyword: [requestedSong.title, requestedSong.artist].filter(Boolean).join(" "),
+        page: request.page || 1,
+        pageSize: request.pageSize || 5,
+        separator: "/",
+        config: request.config || {}
+      });
+
+  return songs.map(function(song) {
+    try {
+      const lyrics = getLyricsForSong(request, song);
+      const year = String(song.date || ((song.fields || {}).date) || "");
+      if (!lyrics || !song.title || !song.artist || !song.album || !year) return null;
+      lyrics.tags = lyrics.tags || {};
+      lyrics.tags.ti = String(song.title);
+      lyrics.tags.ar = String(song.artist);
+      lyrics.tags.al = String(song.album);
+      lyrics.tags.date = year;
+      return lyrics;
+    } catch (e) {
+      Platform.log.warn("KG", "Lyrics candidate failed: " + String(e && e.message ? e.message : e));
+      return null;
+    }
+  }).filter(Boolean);
 }

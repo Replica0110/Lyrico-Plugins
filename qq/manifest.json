@@ -1,11 +1,11 @@
 {
   "id": "com.qqmusic.source",
   "name": "QQ音乐",
-  "versionCode": 4,
-  "versionName": "0.2.0",
+  "versionCode": 5,
+  "versionName": "0.3.0",
   "author": "Replica0110",
   "description": "QQ音乐搜索源插件",
-  "apiVersion": 3,
+  "apiVersion": 4,
   "includeDirs": [
     "lib"
   ],

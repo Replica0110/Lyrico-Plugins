@@ -59,6 +59,13 @@ function mapTrack(track, request) {
     title: String(track.name || ""),
     artist: names(track.artists, request.separator),
     album: String((track.album || {}).name || ""),
+    date: String(
+      track.publish_time ||
+      track.publishTime ||
+      (track.album || {}).release_date ||
+      (track.album || {}).releaseDate ||
+      ""
+    ),
     cover_url: cover
   };
 
@@ -86,6 +93,7 @@ function mapTrack(track, request) {
     artist: fields.artist,
     album: fields.album,
     duration: Number(track.duration || 0),
+    date: fields.date,
     picUrl: cover,
     fields: fields,
     internal: internal
@@ -116,15 +124,14 @@ function searchSongs(request) {
 function searchCovers(request) {
   return searchSongs({
     keyword: request.keyword,
-    page: 1,
+    page: request.page || 1,
     pageSize: request.pageSize || 5,
     separator: "/",
     config: request.config || {}
-  }).filter(song => song.picUrl);
+  }).filter(song => song.picUrl && song.title && song.artist && song.album && song.date);
 }
 
-function getLyrics(request) {
-  const song = request.song || {};
+function getLyricsForSong(request, song) {
   const internal = song.internal || {};
   const trackId = internal.soda_track_id || song.id || "";
 
@@ -162,4 +169,34 @@ function getLyrics(request) {
     translated: parsed.translated,
     romanization: parsed.romanization
   };
+}
+
+function getLyrics(request) {
+  const requestedSong = request.song || {};
+  const songs = requestedSong.id && requestedSong.id !== "local-song"
+    ? [requestedSong]
+    : searchSongs({
+        keyword: [requestedSong.title, requestedSong.artist].filter(Boolean).join(" "),
+        page: request.page || 1,
+        pageSize: request.pageSize || 5,
+        separator: "/",
+        config: request.config || {}
+      });
+
+  return songs.map(function(song) {
+    try {
+      const lyrics = getLyricsForSong(request, song);
+      const year = String(song.date || ((song.fields || {}).date) || "");
+      if (!lyrics || !song.title || !song.artist || !song.album || !year) return null;
+      lyrics.tags = lyrics.tags || {};
+      lyrics.tags.ti = String(song.title);
+      lyrics.tags.ar = String(song.artist);
+      lyrics.tags.al = String(song.album);
+      lyrics.tags.date = year;
+      return lyrics;
+    } catch (e) {
+      Platform.log.warn("SODA", "Lyrics candidate failed: " + String(e && e.message ? e.message : e));
+      return null;
+    }
+  }).filter(Boolean);
 }
