@@ -122,6 +122,79 @@ function searchSongs(request) {
 }
 
 function searchCovers(request) {
+  // 规范 search_type：0=歌曲（默认）、1=歌手、2=专辑。
+  const canonical = Number(request.search_type || 0);
+
+  if (canonical === 1 || canonical === 2) {
+    const cursor = Math.max(0, (Number(request.page || 1) - 1) * Number(request.pageSize || 5));
+    const path = canonical === 1 ? "luna/pc/search/artist" : "luna/pc/search/album";
+    const root = getJson(path, {
+      q: request.keyword || "",
+      cursor: cursor,
+      search_method: "input",
+      aid: "386088",
+      device_platform: "web",
+      channel: "pc_web"
+    });
+
+    const groups = Array.isArray(root.result_groups) ? root.result_groups : [];
+    const data = (groups[0] || {}).data || [];
+
+    if (canonical === 1) {
+      // 歌手：entity.artist { id, name, url_avatar }
+      return data
+        .map(item => item.entity && item.entity.artist)
+        .filter(Boolean)
+        .map(function(artist) {
+          const name = String(artist.name || "");
+          const pic = buildCover(artist.url_avatar);
+          return {
+            id: String(artist.id || ""),
+            title: name,
+            artist: name,
+            album: "",
+            duration: 0,
+            date: "",
+            trackNumber: "",
+            picUrl: pic,
+            fields: {
+              title: name,
+              artist: name,
+              cover_url: pic
+            }
+          };
+        })
+        .filter(song => song.id && song.title && song.picUrl);
+    }
+
+    // 专辑：entity.album { id, name, url_cover, artists }
+    return data
+      .map(item => item.entity && item.entity.album)
+      .filter(Boolean)
+      .map(function(album) {
+        const name = String(album.name || "");
+        const pic = buildCover(album.url_cover);
+        const artist = names(album.artists || [], request.separator);
+        return {
+          id: String(album.id || ""),
+          title: name,
+          artist: artist,
+          album: name,
+          duration: 0,
+          date: "",
+          trackNumber: "",
+          picUrl: pic,
+          fields: {
+            title: name,
+            artist: artist,
+            album: name,
+            cover_url: pic
+          }
+        };
+      })
+      .filter(song => song.id && song.title && song.picUrl);
+  }
+
   return searchSongs({
     keyword: request.keyword,
     page: request.page || 1,

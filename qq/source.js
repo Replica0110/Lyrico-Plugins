@@ -71,7 +71,7 @@ function searchSongs(request) {
     search_id: randomSearchId(),
     remoteplace: "search.android.keyboard",
     query: String(request.keyword || ""),
-    search_type: 0,
+    search_type: Number(request.search_type || 0),
     num_per_page: pageSize,
     page_num: page,
     highlight: 0,
@@ -85,12 +85,73 @@ function searchSongs(request) {
 }
 
 function searchCovers(request) {
+  const searchType = Number(request.search_type || 0);
+  if (searchType === 1 || searchType === 2) {
+    // 歌手(=1) / 专辑(=2) 封面：响应结构不同，单独映射
+    const page = Number(request.page || 1);
+    const pageSize = Number(request.pageSize || 5);
+    const response = postMusicu("music.search.SearchCgiService", "DoSearchForQQMusicLite", {
+      search_id: randomSearchId(),
+      remoteplace: "search.android.keyboard",
+      query: String(request.keyword || ""),
+      search_type: searchType,
+      num_per_page: pageSize,
+      page_num: page,
+      highlight: 0,
+      nqc_flag: 0,
+      page_id: 1,
+      grp: 1
+    });
+    const body = (((response.req_0 || {}).data || {}).body || {});
+    const size = (request.config && request.config.cover_size) || "1200";
+    const urlFor = function(mid) {
+      return mid ? "https://y.gtimg.cn/music/photo_new/T002R" + size + "x" + size + "M000" + mid + ".jpg" : "";
+    };
+    if (searchType === 1) {
+      // body.singer: { singerID, singerMID, singerName, singerPic }
+      return (body.singer || []).map(function(s) {
+        return {
+          id: String(s.singerID || ""),
+          title: String(s.singerName || ""),
+          artist: "",
+          album: "",
+          duration: 0,
+          date: "",
+          trackNumber: "",
+          picUrl: s.singerPic || urlFor(s.singerMID),
+          fields: {
+            title: String(s.singerName || ""),
+            cover_url: s.singerPic || urlFor(s.singerMID)
+          }
+        };
+      }).filter(function(song) { return song.id && song.title && song.picUrl; });
+    }
+    // searchType === 2: body.item_album: { id, albummid, name, pic }
+    return (body.item_album || []).map(function(a) {
+      return {
+        id: String(a.id || ""),
+        title: String(a.name || ""),
+        artist: "",
+        album: String(a.name || ""),
+        duration: 0,
+        date: "",
+        trackNumber: "",
+        picUrl: a.pic || urlFor(a.albummid),
+        fields: {
+          title: String(a.name || ""),
+          album: String(a.name || ""),
+          cover_url: a.pic || urlFor(a.albummid)
+        }
+      };
+    }).filter(function(song) { return song.id && song.title && song.picUrl; });
+  }
   return searchSongs({
     keyword: request.keyword,
     page: request.page || 1,
     pageSize: request.pageSize || 5,
     separator: "/",
-    config: request.config || {}
+    config: request.config || {},
+    search_type: 0
   }).filter(song => song.picUrl && song.title && song.artist && song.album && song.date);
 }
 

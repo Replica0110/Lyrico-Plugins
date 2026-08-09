@@ -42,6 +42,87 @@ function searchSongs(request) {
 }
 
 function searchCovers(request) {
+  // 规范 search_type：0=歌曲（默认）、1=歌手、2=专辑。
+  const canonical = Number(request.search_type || 0);
+
+  // 歌手 / 专辑：走 mobilecdn.kugou.com 的 v3 接口（无需签名）
+  if (canonical === 1 || canonical === 2) {
+    const page = String(request.page || 1);
+    const pageSize = String(request.pageSize || 5);
+    const kw = String(request.keyword || "");
+
+    if (canonical === 1) {
+      // 1) 搜歌手 → data[]: { singername, singerid }
+      const listUrl =
+        "https://mobilecdn.kugou.com/api/v3/search/singer?keyword=" +
+        encodeURIComponent(kw) + "&page=" + page + "&pagesize=" + pageSize;
+      const listResp = getJson(listUrl, {});
+      const singers = Array.isArray(listResp.data) ? listResp.data : [];
+      const results = [];
+      // 2) 逐个取歌手详情拿头像图（singer/info.data.imgurl）
+      for (let i = 0; i < singers.length; i++) {
+        const s = singers[i];
+        if (!s || !s.singerid || !s.singername) continue;
+        let imgUrl = "";
+        try {
+          const infoUrl =
+            "https://mobilecdn.kugou.com/api/v3/singer/info?singerid=" +
+            String(s.singerid);
+          const infoResp = getJson(infoUrl, {});
+          imgUrl = normalizeImage(infoResp.data && infoResp.data.imgurl);
+        } catch (e) {
+          imgUrl = "";
+        }
+        const name = String(s.singername || "");
+        results.push({
+          id: String(s.singerid || ""),
+          title: name,
+          artist: name,
+          album: "",
+          duration: 0,
+          date: "",
+          trackNumber: "",
+          picUrl: imgUrl,
+          fields: {
+            title: name,
+            artist: name,
+            cover_url: imgUrl
+          }
+        });
+      }
+      return results.filter(song => song.id && song.title && song.picUrl);
+    }
+
+    // canonical === 2（专辑）：data.info[]: { albumid, albumname, imgurl, singername, publishtime }
+    const albumUrl =
+      "https://mobilecdn.kugou.com/api/v3/search/album?keyword=" +
+      encodeURIComponent(kw) + "&page=" + page + "&pagesize=" + pageSize;
+    const albumResp = getJson(albumUrl, {});
+    const albums = (albumResp.data && Array.isArray(albumResp.data.info)) ? albumResp.data.info : [];
+    return albums.map(function(a) {
+      const imgUrl = normalizeImage(a.imgurl);
+      const name = String(a.albumname || "");
+      const artist = String(a.singername || "");
+      return {
+        id: String(a.albumid || ""),
+        title: name,
+        artist: artist,
+        album: name,
+        duration: 0,
+        date: String(a.publishtime || ""),
+        trackNumber: "",
+        picUrl: imgUrl,
+        fields: {
+          title: name,
+          artist: artist,
+          album: name,
+          date: String(a.publishtime || ""),
+          cover_url: imgUrl
+        }
+      };
+    }).filter(song => song.id && song.title && song.picUrl);
+  }
+
   return searchSongs({
     keyword: request.keyword,
     page: request.page || 1,

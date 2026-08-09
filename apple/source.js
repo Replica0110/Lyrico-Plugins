@@ -143,6 +143,129 @@ function searchSongs(request) {
 }
 
 function searchCovers(request) {
+  // 规范 search_type：0=歌曲（默认）、1=歌手、2=专辑。
+  // Apple Music Catalog Search 原生支持 types=artists / albums，直接按类型搜索。
+  const canonical = Number(request.search_type || 0);
+
+  if (canonical === 1 || canonical === 2) {
+    const developerToken = getDeveloperToken();
+    if (!developerToken) {
+      warnApple("search aborted because developer token is empty");
+      return [];
+    }
+
+    const region = appleRequestRegion(request);
+    const language = appleRequestLanguage(request);
+    const types = canonical === 1 ? "artists" : "albums";
+
+    const offset = Math.max(
+      0,
+      (Number(request.page || 1) - 1) * Number(request.pageSize || 5)
+    );
+
+    const url =
+      "https://amp-api.music.apple.com/v1/catalog/" +
+      storefront(region) +
+      "/search" +
+      "?term=" +
+      encodeURIComponent(request.keyword || "") +
+      "&types=" +
+      types +
+      "&limit=" +
+      encodeURIComponent(request.pageSize || 5) +
+      "&offset=" +
+      encodeURIComponent(offset) +
+      "&l=" +
+      encodeURIComponent(language) +
+      "&platform=web" +
+      "&format[resources]=map";
+
+    logApple(
+      "search request type=" + types + " keyword=" + String(request.keyword || "") + " url=" + url
+    );
+
+    const raw = appleGet(url, developerToken, "");
+    const root = JSON.parse(raw);
+
+    // 歌手：root.results.artists.data[]，resources.artists[id] 为完整实体
+    if (canonical === 1) {
+      const data = (((root.results || {}).artists || {}).data || []);
+      const resources = ((root.resources || {}).artists || {});
+      return data
+        .map(function(item) {
+          return resources[String(item.id || "")] || item;
+        })
+        .filter(Boolean)
+        .map(function(artist) {
+          const attrs = artist.attributes || {};
+          const size = configValue(request, "cover_size", "3000");
+          const artwork = attrs.artwork && attrs.artwork.url
+            ? String(attrs.artwork.url).replace("{w}", size).replace("{h}", size).replace("{f}", "jpg")
+            : "";
+          const name = String(attrs.name || "");
+          const fields = {
+            title: name,
+            artist: name,
+            cover_url: artwork
+          };
+          return {
+            id: String(artist.id || ""),
+            title: name,
+            artist: name,
+            album: "",
+            duration: 0,
+            date: "",
+            trackNumber: "",
+            picUrl: artwork,
+            fields: fields,
+            internal: { apple_id: String(artist.id || "") }
+          };
+        })
+        .filter(function(song) {
+          return song.id && song.title && song.picUrl;
+        });
+    }
+
+    // 专辑：root.results.albums.data[]，resources.albums[id] 为完整实体
+    const data = (((root.results || {}).albums || {}).data || []);
+    const resources = ((root.resources || {}).albums || {});
+    return data
+      .map(function(item) {
+        return resources[String(item.id || "")] || item;
+      })
+      .filter(Boolean)
+      .map(function(album) {
+        const attrs = album.attributes || {};
+        const size = configValue(request, "cover_size", "3000");
+        const artwork = attrs.artwork && attrs.artwork.url
+          ? String(attrs.artwork.url).replace("{w}", size).replace("{h}", size).replace("{f}", "jpg")
+          : "";
+        const name = String(attrs.name || "");
+        const fields = {
+          title: name,
+          album: name,
+          artist: splitArtist(attrs.artistName, request.separator),
+          date: String(attrs.releaseDate || ""),
+          cover_url: artwork
+        };
+        return {
+          id: String(album.id || ""),
+          title: name,
+          artist: fields.artist,
+          album: name,
+          duration: 0,
+          date: fields.date,
+          trackNumber: "",
+          picUrl: artwork,
+          fields: fields,
+          internal: { apple_id: String(album.id || "") }
+        };
+      })
+      .filter(function(song) {
+        return song.id && song.title && song.picUrl;
+      });
+  }
+
   return searchSongs({
     keyword: request.keyword,
     page: request.page || 1,

@@ -260,6 +260,74 @@ function searchSongs(request) {
 }
 
 function searchCovers(request) {
+  // 规范 search_type：0=歌曲（默认）、1=歌手、2=专辑。
+  // 网易云 cloudsearch 原生 type：1=歌曲、10=专辑、100=歌手，此处做转换。
+  const canonical = Number(request.search_type || 0);
+  if (canonical === 1 || canonical === 2) {
+    const nativeType = canonical === 1 ? 100 : 10; // 歌手=100，专辑=10
+    const pageSize = Number(request.pageSize || 5);
+    const page = Math.max(1, Number(request.page || 1));
+    const offset = Math.max(0, (page - 1) * pageSize);
+
+    const root = postForm("https://music.163.com/api/cloudsearch/pc", {
+      s: request.keyword || "",
+      type: nativeType,
+      offset: offset,
+      limit: pageSize
+    });
+    const result = (root && root.result) || {};
+
+    if (canonical === 2) {
+      // 专辑：result.albums: { name, id, picUrl }
+      return (Array.isArray(result.albums) ? result.albums : [])
+        .map(function (a) {
+          const pic = String(a.picUrl || "").replace("http:", "https:");
+          return {
+            id: String(a.id || ""),
+            title: String(a.name || ""),
+            artist: "",
+            album: String(a.name || ""),
+            duration: 0,
+            date: "",
+            trackNumber: "",
+            picUrl: pic,
+            fields: {
+              title: String(a.name || ""),
+              album: String(a.name || ""),
+              cover_url: pic
+            }
+          };
+        })
+        .filter(function (song) {
+          return song.id && song.title && song.picUrl;
+        });
+    }
+
+    // canonical === 1（歌手）：result.artists: { id, name, picUrl }
+    return (Array.isArray(result.artists) ? result.artists : [])
+      .map(function (s) {
+        const pic = String(s.picUrl || "").replace("http:", "https:");
+        return {
+          id: String(s.id || ""),
+          title: String(s.name || ""),
+          artist: String(s.name || ""),
+          album: "",
+          duration: 0,
+          date: "",
+          trackNumber: "",
+          picUrl: pic,
+          fields: {
+            title: String(s.name || ""),
+            artist: String(s.name || ""),
+            cover_url: pic
+          }
+        };
+      })
+      .filter(function (song) {
+        return song.id && song.title && song.picUrl;
+      });
+  }
+
   return searchSongs({
     keyword: request.keyword,
     page: request.page || 1,
