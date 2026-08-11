@@ -1,8 +1,8 @@
 {
   "id": "com.neteasecloudmusic.source",
   "name": "网易云音乐",
-  "versionCode": 6,
-  "versionName": "0.3.0",
+  "versionCode": 7,
+  "versionName": "0.3.1",
   "author": "Replica0110",
   "description": "网易云搜索源插件",
   "apiVersion": 4,

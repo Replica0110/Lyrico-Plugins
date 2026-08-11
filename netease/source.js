@@ -34,7 +34,50 @@ function getDiscNumber(song) {
   return String(song.cd || "");
 }
 function getPublishTime(song) {
-  return Number(song.publishTime || song.publishTimeMs || 0);
+  const album = getAlbum(song);
+  return firstPositiveNumber([
+    song.publishTime,
+    song.publishTimeMs,
+    album.publishTime,
+    album.publishTimeMs
+  ]);
+}
+
+function getAlbumId(song) {
+  const album = getAlbum(song);
+  const internal = song && song.internal ? song.internal : {};
+  return firstPositiveNumber([
+    album.id,
+    internal.albumId,
+    internal.album_id
+  ]);
+}
+
+function resolveSongDate(song) {
+  const knownDate = String(song.date || ((song.fields || {}).date) || "");
+  if (knownDate) return knownDate;
+
+  let albumId = getAlbumId(song);
+  try {
+    if (!albumId && song.id) {
+      const detail = postForm("https://music.163.com/api/v3/song/detail", {
+        c: JSON.stringify([{ id: Number(song.id) }]),
+        ids: JSON.stringify([Number(song.id)])
+      });
+      const detailedSong = detail && Array.isArray(detail.songs) ? detail.songs[0] : null;
+      albumId = getAlbumId(detailedSong || {});
+    }
+
+    if (!albumId) return "";
+    const root = getJson("https://music.163.com/api/v1/album/" + encodeURIComponent(String(albumId)));
+    return formatDate(getPublishTime((root && root.album) || {}));
+  } catch (e) {
+    Platform.log.warn(
+      "NE",
+      "Resolve song date failed: " + String(e && e.message ? e.message : e)
+    );
+    return "";
+  }
 }
 
 function getMvId(song) {
@@ -172,7 +215,9 @@ function mapSong(song, request) {
     discNumber: fields.disc_number,
     picUrl: picUrl,
     fields: fields,
-    internal: {}
+    internal: {
+      albumId: String(album.id || "")
+    }
   };
 }
 
@@ -422,13 +467,13 @@ function getLyrics(request) {
   return songs.map(function(song) {
     try {
       const lyrics = getLyricsForSong(request, song);
-      const year = String(song.date || ((song.fields || {}).date) || "");
-      if (!lyrics || !song.title || !song.artist || !song.album || !year) return null;
+      const date = resolveSongDate(song);
+      if (!lyrics || !song.title || !song.artist || !song.album || !date) return null;
       lyrics.tags = lyrics.tags || {};
       lyrics.tags.ti = String(song.title);
       lyrics.tags.ar = String(song.artist);
       lyrics.tags.al = String(song.album);
-      lyrics.tags.date = year;
+      lyrics.tags.date = date;
       return lyrics;
     } catch (e) {
       Platform.log.warn("NE", "Lyrics candidate failed: " + String(e && e.message ? e.message : e));
