@@ -1,0 +1,31 @@
+{
+  "id": "com.lrcshare.source",
+  "name": "LrcShare",
+  "versionCode": 2,
+  "versionName": "1.1.0",
+  "author": "X2ISPANDA",
+  "description": "LrcShare 歌词站搜索源：歌词、专辑封面、元数据，匿名调用无需配置密钥",
+  "apiVersion": 4,
+  "entry": "source.js",
+  "includeDirs": ["lib"],
+  "icon": "icon.png",
+  "capabilities": ["searchSongs", "getLyrics", "searchCovers"],
+  "configFields": [
+    {
+      "key": "enrich",
+      "title": "完整元数据",
+      "summary": "搜索时逐首拉取词曲作者、音轨号、备注与歌词，用于完整打标；关闭则仅返回摘要，速度更快",
+      "group": "搜索",
+      "type": "switch",
+      "defaultValue": "true"
+    },
+    {
+      "key": "timeout",
+      "title": "超时（秒）",
+      "summary": "API 请求超时时间",
+      "group": "请求",
+      "type": "number",
+      "defaultValue": "15"
+    }
+  ]
+}
