@@ -18,6 +18,27 @@ function names(items, separator) {
     .join(separator || "/");
 }
 
+function shareLyricsToLrc(routerData) {
+  const loaderData = (routerData || {}).loaderData || {};
+  const trackPage = loaderData.track_page || {};
+  const audioOption = trackPage.audioWithLyricsOption || {};
+  const lyrics = audioOption.lyrics || {};
+  const sentences = Array.isArray(lyrics.sentences) ? lyrics.sentences : [];
+
+  return sentences.map(function(sentence) {
+    const startMs = Math.max(0, Number(sentence.startMs || 0));
+    const minutes = Math.floor(startMs / 60000);
+    const seconds = Math.floor((startMs % 60000) / 1000);
+    const millis = Math.floor(startMs % 1000);
+    const text = (Array.isArray(sentence.words) ? sentence.words : [])
+      .map(word => String((word || {}).text || ""))
+      .join("");
+    return "[" + String(minutes).padStart(2, "0") + ":" +
+      String(seconds).padStart(2, "0") + "." +
+      String(millis).padStart(3, "0") + "]" + text;
+  }).filter(Boolean).join("\n");
+}
+
 function parseTags(track) {
   const grouped = {};
 
@@ -106,11 +127,12 @@ function searchSongs(request) {
   const root = getJson("luna/pc/search/track", {
     q: request.keyword || "",
     cursor: cursor,
+    search_id: randomUuid(),
     search_method: "input",
-    aid: "386088",
-    device_platform: "web",
-    channel: "pc_web"
-  });
+    debug_params: "",
+    from_search_id: "",
+    search_scene: ""
+  }, request.config || {});
 
   const data = ((((root.result_groups || [])[0] || {}).data) || []);
 
@@ -137,17 +159,28 @@ function getLyricsForSong(request, song) {
 
   if (!trackId) return null;
 
-  const root = getJson("luna/pc/track_v2", {
-    track_id: trackId,
-    media_type: "track",
-    aid: "386088",
-    device_platform: "web",
-    channel: "pc_web"
-  });
+  const config = request.config || {};
+  let raw = "";
+  let translatedRaw = "";
 
-  const lyric = root.lyric || {};
-  const raw = String(lyric.content || "");
-  const translatedRaw = String(((lyric.translations || {}).cn) || "");
+  if (!hasSodaAuth(config)) {
+    try {
+      raw = shareLyricsToLrc(getShareTrackData(trackId));
+    } catch (error) {
+      Platform.log.warn("SODA", "Share lyrics failed, falling back to track_v2: " + String(error && error.message ? error.message : error));
+    }
+  }
+
+  if (!raw) {
+    const root = getJson("luna/pc/track_v2", {
+      track_id: trackId,
+      media_type: "track",
+      queue_type: ""
+    }, config);
+    const lyric = root.lyric || {};
+    raw = String(lyric.content || "");
+    translatedRaw = String(((lyric.translations || {}).cn) || "");
+  }
 
   if (!raw && !translatedRaw) return null;
 
