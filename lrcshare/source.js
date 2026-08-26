@@ -1,6 +1,7 @@
 // LrcShare × Lyrico 插件入口
 // 数据源：https://api.lrcshare.com（匿名调用，无需鉴权）
 // 流程：searchSongs 拿列表（可逐首补全元数据）→ getLyrics 解析 LRC
+// 省请求：先拉全库目录快照（24h 缓存）做本地负向预过滤，库里没有的歌 0 请求直接返回空
 
 /** 调 /v1/search?type=song，返回原始 items */
 function searchApiSongs(keyword, page, pageSize, config) {
@@ -132,6 +133,35 @@ function enrichSong(song, config, separator) {
   }
 }
 
+/**
+ * 目录负向预过滤：查询串（整串 keyword / 结构化 title+artist / 含空格时的各切分组合）
+ * 全都不在全库目录快照文本中 → 搜索必然 0 结果 → 返回 false 让调用方直接返回空，省掉全部请求。
+ * 目录拉取失败（null）时恒返回 true：宁可多一次请求，绝不漏判。
+ */
+function catalogAllows(config, keyword, title, artist) {
+  var catalog = LrcShare.getCatalog(config);
+  if (!catalog || !catalog.text) return true;
+  var text = String(catalog.text);
+
+  if (keyword && text.indexOf(keyword.toLowerCase()) !== -1) return true;
+  if (title || artist) {
+    var titleOk = !title || text.indexOf(title.toLowerCase()) !== -1;
+    var artistOk = !artist || text.indexOf(artist.toLowerCase()) !== -1;
+    if (titleOk && artistOk) return true;
+  }
+  if (keyword && /\s/.test(keyword)) {
+    var tokens = keyword.toLowerCase().split(/\s+/).filter(Boolean);
+    var maxSplit = Math.min(tokens.length - 1, 6); // 与 searchCombined 的切分穷举保持一致
+    for (var i = 1; i <= maxSplit; i++) {
+      if (text.indexOf(tokens.slice(0, i).join(" ")) !== -1 &&
+          text.indexOf(tokens.slice(i).join(" ")) !== -1) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 function searchSongs(request) {
   try {
     var config = LrcShare.getConfig(request);
@@ -142,6 +172,9 @@ function searchSongs(request) {
 
     var page = Math.max(1, Number(request.page || 1));
     var pageSize = Number(request.pageSize || 20);
+
+    // 负向预过滤：全库目录里连可能的命中文本都没有 → 直接返回空（0 次搜索请求）
+    if (!catalogAllows(config, keyword, reqTitle, reqArtist)) return [];
 
     // Lyrico 后续版本将直接下发结构化 title/artist 字段，有则优先精确查询，无需切分猜测
     var items;
