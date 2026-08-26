@@ -1,8 +1,8 @@
 {
   "id": "com.sodamusic.source",
   "name": "汽水音乐",
-  "versionCode": 6,
-  "versionName": "0.3.1",
+  "versionCode": 7,
+  "versionName": "0.4.0",
   "author": "Replica0110",
   "description": "汽水音乐搜索源插件",
   "apiVersion": 4,
@@ -15,6 +15,52 @@
     "searchSongs",
     "getLyrics",
     "searchCovers"
+  ],
+  "configFields": [
+    {
+      "key": "auth_notice",
+      "title": "请求认证说明",
+      "group": "请求",
+      "type": "markdown",
+      "defaultValue": "汽水接口可能对匿名请求返回 HTTP 200 空响应。插件默认模拟 Luna PC 3.5.1；若持续触发风控，可从汽水 PC 客户端请求中填写 Cookie、X-Helios 和 X-Medusa。认证信息属于敏感数据，请勿分享。"
+    },
+    {
+      "key": "device_id",
+      "title": "Device ID",
+      "summary": "Luna PC 请求的 device_id/fp；需与认证信息对应",
+      "group": "请求",
+      "type": "text",
+      "defaultValue": "3753066532709850"
+    },
+    {
+      "key": "iid",
+      "title": "Install ID",
+      "summary": "Luna PC 请求的 iid；需与认证信息对应",
+      "group": "请求",
+      "type": "text",
+      "defaultValue": "3753066532713946"
+    },
+    {
+      "key": "cookies",
+      "title": "Cookie",
+      "group": "认证",
+      "type": "password",
+      "defaultValue": ""
+    },
+    {
+      "key": "x_helios",
+      "title": "X-Helios",
+      "group": "认证",
+      "type": "password",
+      "defaultValue": ""
+    },
+    {
+      "key": "x_medusa",
+      "title": "X-Medusa",
+      "group": "认证",
+      "type": "password",
+      "defaultValue": ""
+    }
   ],
   "minHostApiVersion": 1
 }
