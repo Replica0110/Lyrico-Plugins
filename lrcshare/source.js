@@ -134,8 +134,10 @@ function enrichSong(song, config, separator) {
 }
 
 /**
- * 目录负向预过滤：查询串（整串 keyword / 结构化 title+artist / 含空格时的各切分组合）
- * 全都不在全库目录快照文本中 → 搜索必然 0 结果 → 返回 false 让调用方直接返回空，省掉全部请求。
+ * 目录负向预过滤（token 级，与搜索端宽松语义配套）：
+ * 只要查询串的任意 token（或整串/结构化字段）在全库目录快照文本中出现即放行；
+ * 仅当「全部 token 均不在快照」才判 0 结果返回 false。
+ * token 级判定容忍快照滞后——单个字段缺失不再整体拦截。
  * 目录拉取失败（null）时恒返回 true：宁可多一次请求，绝不漏判。
  */
 function catalogAllows(config, keyword, title, artist) {
@@ -143,21 +145,24 @@ function catalogAllows(config, keyword, title, artist) {
   if (!catalog || !catalog.text) return true;
   var text = String(catalog.text);
 
-  if (keyword && text.indexOf(keyword.toLowerCase()) !== -1) return true;
-  if (title || artist) {
-    var titleOk = !title || text.indexOf(title.toLowerCase()) !== -1;
-    var artistOk = !artist || text.indexOf(artist.toLowerCase()) !== -1;
-    if (titleOk && artistOk) return true;
-  }
-  if (keyword && /\s/.test(keyword)) {
-    var tokens = keyword.toLowerCase().split(/\s+/).filter(Boolean);
-    var maxSplit = Math.min(tokens.length - 1, 6); // 与 searchCombined 的切分穷举保持一致
-    for (var i = 1; i <= maxSplit; i++) {
-      if (text.indexOf(tokens.slice(0, i).join(" ")) !== -1 &&
-          text.indexOf(tokens.slice(i).join(" ")) !== -1) {
-        return true;
-      }
+  function anyHit(str) {
+    if (!str) return false;
+    var lower = String(str).toLowerCase();
+    if (text.indexOf(lower) !== -1) return true;
+    // 整串不在 → 任一 token 在即放行（宽松语义下命中任一 token 的歌会返回）
+    var toks = lower.split(/\s+/).filter(Boolean);
+    for (var i = 0; i < toks.length; i++) {
+      if (text.indexOf(toks[i]) !== -1) return true;
     }
+    return false;
+  }
+
+  if (keyword) {
+    if (anyHit(keyword)) return true;
+  } else {
+    // 结构化：title / artist 任一字段（或其 token）在快照中即放行
+    if (anyHit(title)) return true;
+    if (anyHit(artist)) return true;
   }
   return false;
 }

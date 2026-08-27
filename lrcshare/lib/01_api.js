@@ -34,8 +34,12 @@ LrcShare.get = function (path, params, config) {
 // 全库可搜索文本（歌名/别名、艺术家名/别名、专辑名，已小写）。
 // 搜索接口的全部匹配都是「查询串作为字段子串」，因此查询串不在快照文本中 → 必然 0 结果，
 // 可直接跳过请求。目录本身 24h 缓存一次；拉取失败返回 null（降级为不做预过滤，行为同旧版）。
+//
+// ⚠️ 快照可能滞后（库数据更新/迁移后，本地 24h 缓存仍是旧文本）→ 命中失败导致误拦截。
+// 配套升级搜索端宽松语义（至少命中一个 token 即返回）后，预过滤必须同步放宽为
+// token 级：只要有一个 token 在快照中就放行；仅当「所有 token 均不在快照」才拦截。
 
-LrcShare.CATALOG_CACHE_KEY = "lrcshare.catalog.v1";
+LrcShare.CATALOG_CACHE_KEY = "lrcshare.catalog.v2"; // v2：token 级判定，强制刷掉旧缓存
 LrcShare.CATALOG_TTL_MS = 24 * 60 * 60 * 1000;
 
 LrcShare.getCatalog = function (config) {
