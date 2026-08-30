@@ -97,7 +97,7 @@ function enrichSong(song, config, separator) {
   if (!trackId) return;
 
   try {
-    var response = LrcShare.get("/song/" + encodeURIComponent(trackId), {}, config);
+    var response = LrcShare.get("/song/" + encodeURIComponent(trackId), { lyric_lines: "1" }, config);
     var detail = response && response.data;
     if (!detail) return;
 
@@ -127,6 +127,10 @@ function enrichSong(song, config, separator) {
     }
     if (detail.lrc) {
       fields.lyrics = detail.lrc;
+    }
+    // 多语言版本结构化数据缓存到 internal（getLyrics 阶段直接复用，避免二次请求）
+    if (detail.lyric_lines && detail.lyric_lines.versions && detail.lyric_lines.versions.length) {
+      song.internal.lyric_lines = detail.lyric_lines;
     }
   } catch (e) {
     Platform.log.warn("LrcShare", "enrich failed for " + trackId + ": " + (e && e.message ? e.message : e));
@@ -213,19 +217,132 @@ function searchSongs(request) {
   }
 }
 
-/** 单首歌 → 结构化歌词（ti/ar/al/date 标签 + 逐行时间轴） */
+/** 剥词标签 <偏移毫秒> → 只留文本 */
+function stripWordTags(text) {
+  return String(text || "").replace(/<\d{1,6}>/g, "");
+}
+
+/** text（含 <偏移毫秒> 词标签）→ Lyrico 逐词 [[wordStart, wordEnd, "word"], ...] */
+function wordsOf(text, lineStart, lineEnd) {
+  var tokens = String(text).split(/<(\d{1,6})>/);
+  var starts = [];
+  var offset = 0;
+  for (var i = 0; i < tokens.length; i++) {
+    if (i % 2 === 0) {
+      if (tokens[i]) starts.push({ text: tokens[i], start: lineStart + offset });
+    } else {
+      offset = parseInt(tokens[i], 10);
+    }
+  }
+  var words = [];
+  for (var j = 0; j < starts.length; j++) {
+    var wEnd = (j + 1 < starts.length) ? starts[j + 1].start : lineEnd;
+    words.push([starts[j].start, wEnd, starts[j].text]);
+  }
+  return words;
+}
+
+/** 行表 rows → Lyrico 整行 Line[]（translated/romanization 用，剥词标签） */
+function plainToLines(rows) {
+  var timed = (rows || []).filter(function (r) { return r.time_ms != null; })
+    .sort(function (a, b) { return a.time_ms - b.time_ms; });
+  var lines = [];
+  for (var i = 0; i < timed.length; i++) {
+    var start = timed[i].time_ms;
+    var end = (i + 1 < timed.length) ? timed[i + 1].time_ms : start + 3000;
+    lines.push([start, end, stripWordTags(timed[i].text)]);
+  }
+  return lines;
+}
+
+/** 行表 rows → Lyrico original Line[]（含词标签则逐词，否则整行） */
+function originalToLines(rows) {
+  var timed = (rows || []).filter(function (r) { return r.time_ms != null; })
+    .sort(function (a, b) { return a.time_ms - b.time_ms; });
+  var lines = [];
+  for (var i = 0; i < timed.length; i++) {
+    var start = timed[i].time_ms;
+    var end = (i + 1 < timed.length) ? timed[i + 1].time_ms : start + 3000;
+    var text = timed[i].text;
+    if (/<\d{1,6}>/.test(text)) {
+      lines.push([start, end, wordsOf(text, start, end)]);
+    } else {
+      lines.push([start, end, text]);
+    }
+  }
+  return lines;
+}
+
+/** tags（ti/ar/al/date） */
+function buildTags(fields, song) {
+  return {
+    ti: fields.title || song.title || "",
+    ar: fields.artist || song.artist || "",
+    al: fields.album || song.album || "",
+    date: fields.date || song.date || ""
+  };
+}
+
+/**
+ * lyric_lines（versions 数组）→ Lyrico structured 的 original/translated/romanization。
+ * Lyrico structured 的 translated/romanization 是「单一」Line[]：多语言译文合并进同一个
+ * translated（同时间戳并列显示），保证打开翻译开关能看全所有译文（如东京盆踊 中+日 两行）。
+ */
+function buildStructuredFromVersions(lyricLines, fields, song) {
+  var versions = lyricLines.versions || [];
+  var originalVer = null;
+  var translatedRows = [];
+  var romanRows = [];
+  for (var i = 0; i < versions.length; i++) {
+    var v = versions[i];
+    Platform.log.warn("LrcShare", "version: lang=" + v.lang + " kind=" + v.kind + " rows=" + (v.rows ? v.rows.length : 0));
+    if (v.kind === "original" && !originalVer) originalVer = v;
+    else if (v.kind === "translation") translatedRows = translatedRows.concat(v.rows || []);
+    else if (v.kind === "romanization") romanRows = romanRows.concat(v.rows || []);
+  }
+
+  var original = originalVer ? originalToLines(originalVer.rows || []) : [];
+  if (original.length === 0) return null;
+
+  var translatedLines = translatedRows.length ? plainToLines(translatedRows) : null;
+  var romanLines = romanRows.length ? plainToLines(romanRows) : null;
+  Platform.log.warn("LrcShare", "translated rows=" + translatedRows.length + " lines=" + (translatedLines ? translatedLines.length : 0) + " romanLines=" + (romanLines ? romanLines.length : 0));
+
+  return {
+    type: "structured",
+    tags: buildTags(fields, song),
+    original: original,
+    translated: translatedLines,
+    romanization: romanLines
+  };
+}
+
+/** 单首歌 → 结构化歌词（优先多语言 versions；回退 raw LRC 解析） */
 function getLyricsForSong(request, song) {
   var internal = song.internal || {};
   var fields = song.fields || {};
   var trackId = internal.lrcshare_id || song.id || "";
+  var config = LrcShare.getConfig(request);
 
-  // 搜索阶段已补全的歌词直接复用，避免重复请求详情
+  // 优先：多语言结构化（搜索阶段 enrich 已缓存 internal.lyric_lines；未缓存则此处再拉一次）
+  var lyricLines = internal.lyric_lines || null;
+  if (!lyricLines && trackId) {
+    try {
+      var resp = LrcShare.get("/song/" + encodeURIComponent(trackId), { lyric_lines: "1" }, config);
+      lyricLines = resp && resp.data && resp.data.lyric_lines;
+    } catch (e) {
+      lyricLines = null;
+    }
+  }
+  if (lyricLines && lyricLines.versions && lyricLines.versions.length) {
+    return buildStructuredFromVersions(lyricLines, fields, song);
+  }
+
+  // 回退：raw LRC（老数据 / 无多语言版本）
   var lrcText = fields.lyrics || null;
-
   if (!lrcText) {
     if (!trackId) return null;
     try {
-      var config = LrcShare.getConfig(request);
       var response = LrcShare.get("/song/" + encodeURIComponent(trackId), {}, config);
       var detail = response && response.data;
       if (!detail || !detail.lrc) return null;
@@ -241,12 +358,7 @@ function getLyricsForSong(request, song) {
 
   return {
     type: "structured",
-    tags: {
-      ti: fields.title || song.title || "",
-      ar: fields.artist || song.artist || "",
-      al: fields.album || song.album || "",
-      date: fields.date || song.date || ""
-    },
+    tags: buildTags(fields, song),
     original: original,
     translated: null,
     romanization: null

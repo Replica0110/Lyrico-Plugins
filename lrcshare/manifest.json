@@ -1,10 +1,10 @@
 {
   "id": "com.lrcshare.source",
   "name": "LrcShare",
-  "versionCode": 7,
-  "versionName": "1.4.1",
+  "versionCode": 8,
+  "versionName": "1.5.0",
   "author": "X2ISPANDA",
-  "description": "LrcShare 歌词站搜索源：歌词、专辑封面、元数据，匿名调用无需配置密钥",
+  "description": "LrcShare 歌词站搜索源：歌词、专辑封面、元数据，匿名调用无需配置密钥；多语言歌词（原文/译文/罗马音）结构化返回",
   "apiVersion": 4,
   "entry": "source.js",
   "includeDirs": ["lib"],
