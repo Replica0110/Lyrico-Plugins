@@ -293,16 +293,25 @@ function buildStructuredFromVersions(lyricLines, fields, song) {
   var originalVer = null;
   var translatedRows = [];
   var romanRows = [];
+  var credits = [];
   for (var i = 0; i < versions.length; i++) {
     var v = versions[i];
     Platform.log.warn("LrcShare", "version: lang=" + v.lang + " kind=" + v.kind + " rows=" + (v.rows ? v.rows.length : 0));
     if (v.kind === "original" && !originalVer) originalVer = v;
     else if (v.kind === "translation") translatedRows = translatedRows.concat(v.rows || []);
     else if (v.kind === "romanization") romanRows = romanRows.concat(v.rows || []);
+    // 收集各版本署名去重：原文/译文可能来自不同歌词版本（如原文 LunaBeat TTML、译文用户投稿）
+    if (v.comment && credits.indexOf(v.comment) === -1) credits.push(v.comment);
   }
 
   var original = originalVer ? originalToLines(originalVer.rows || []) : [];
   if (original.length === 0) return null;
+
+  // 署名跟随实际写入的歌词版本：覆盖 enrich 阶段取的顶层 comment（顶层 comment 只代表默认版本，
+  // 词级歌词可能来自其他版本，如 LunaBeat TTML）；多来源时署名多行并列
+  if (credits.length > 0) {
+    fields.comment = credits.join("\n");
+  }
 
   var translatedLines = translatedRows.length ? plainToLines(translatedRows) : null;
   var romanLines = romanRows.length ? plainToLines(romanRows) : null;
