@@ -1,0 +1,39 @@
+{
+  "id": "com.musicbrainz.source",
+  "name": "MusicBrainz",
+  "versionCode": 3,
+  "versionName": "1.1.1",
+  "author": "X2ISPANDA",
+  "description": "MusicBrainz 元数据源：歌曲搜索、专辑封面、词曲作者、流派（无歌词能力）",
+  "apiVersion": 4,
+  "entry": "source.js",
+  "includeDirs": ["lib"],
+  "icon": "icon.png",
+  "capabilities": ["searchSongs", "searchCovers"],
+  "configFields": [
+    {
+      "key": "enrich",
+      "title": "完整元数据",
+      "summary": "搜索时补全词曲作者与流派。受 MusicBrainz 限流（约 1 请求/秒）影响，每次仅补全前几首，重复搜索命中缓存后逐步补全",
+      "group": "搜索",
+      "type": "switch",
+      "defaultValue": "false"
+    },
+    {
+      "key": "enrich_limit",
+      "title": "补全数量",
+      "summary": "每次搜索最多补全前 N 首歌曲的词曲作者与流派",
+      "group": "搜索",
+      "type": "number",
+      "defaultValue": "5"
+    },
+    {
+      "key": "timeout",
+      "title": "超时（秒）",
+      "summary": "API 请求超时时间",
+      "group": "请求",
+      "type": "number",
+      "defaultValue": "20"
+    }
+  ]
+}
