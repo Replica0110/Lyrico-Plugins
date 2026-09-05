@@ -283,21 +283,23 @@ function parseQrcFormat(text) {
     while ((wordMatch = wordRe.exec(lineContent)) !== null) {
       const wordText = wordMatch[1] || "";
       const wordStart = Number(wordMatch[2] || 0);
+      const duration = Number(wordMatch[3] || 0);
 
       // 这里不要过滤空文本。
       // QQ 罗马音里可能存在 "(299,37)" 这种只有时间片、没有文本的 word。
       // master 的 QrcParser 会保留空 LyricsWord，后续 merge 后表现为空文本，而不是把时间片当正文。
-      wordList.push([wordStart, wordText]);
+      wordList.push([wordStart, duration, wordText]);
     }
 
     const words = [];
 
     wordList.forEach((item, index) => {
       const wordStart = item[0];
-      const wordText = item[1];
-      const wordEnd = index < wordList.length - 1
-        ? wordList[index + 1][0]
-        : lineEnd;
+      const duration = Number(item[1] || 0);
+      const wordText = item[2];
+      const wordEnd = duration > 0
+        ? wordStart + duration
+        : (index < wordList.length - 1 ? wordList[index + 1][0] : lineEnd);
 
       words.push([wordStart, wordEnd, wordText]);
     });
