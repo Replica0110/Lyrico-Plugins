@@ -219,24 +219,31 @@ function searchSongs(request) {
 
 /** 剥词标签 <偏移毫秒> → 只留文本 */
 function stripWordTags(text) {
-  return String(text || "").replace(/<\d{1,6}>/g, "");
+  return String(text || "").replace(/<\d{1,6}(?::\d{1,6})?>/g, "");
 }
 
-/** text（含 <偏移毫秒> 词标签）→ Lyrico 逐词 [[wordStart, wordEnd, "word"], ...] */
+/** 把 <偏移[:时长]> 词标签转换为 Lyrico 逐词行。 */
 function wordsOf(text, lineStart, lineEnd) {
-  var tokens = String(text).split(/<(\d{1,6})>/);
+  var tokens = String(text).split(/<(\d{1,6})(?::(\d{1,6}))?>/);
   var starts = [];
   var offset = 0;
+  var duration = 0;
+  // split 结果按“文本、偏移、时长”循环；标签描述它后面的文本。
   for (var i = 0; i < tokens.length; i++) {
-    if (i % 2 === 0) {
-      if (tokens[i]) starts.push({ text: tokens[i], start: lineStart + offset });
-    } else {
+    if (i % 3 === 0) {
+      if (tokens[i]) starts.push({ text: tokens[i], start: lineStart + offset, dur: duration });
+    } else if (i % 3 === 1) {
       offset = parseInt(tokens[i], 10);
+      duration = 0;
+    } else {
+      duration = tokens[i] != null ? parseInt(tokens[i], 10) : 0;
     }
   }
   var words = [];
   for (var j = 0; j < starts.length; j++) {
-    var wEnd = (j + 1 < starts.length) ? starts[j + 1].start : lineEnd;
+    var wEnd = starts[j].dur > 0
+      ? starts[j].start + starts[j].dur
+      : ((j + 1 < starts.length) ? starts[j + 1].start : lineEnd);
     words.push([starts[j].start, wEnd, starts[j].text]);
   }
   return words;
@@ -249,25 +256,55 @@ function plainToLines(rows) {
   var lines = [];
   for (var i = 0; i < timed.length; i++) {
     var start = timed[i].time_ms;
-    var end = (i + 1 < timed.length) ? timed[i + 1].time_ms : start + 3000;
-    lines.push([start, end, stripWordTags(timed[i].text)]);
+    var texts = [];
+    var explicitEnd = null;
+    while (i < timed.length && timed[i].time_ms === start) {
+      var text = stripWordTags(timed[i].text);
+      if (text && texts.indexOf(text) === -1) texts.push(text);
+      if (timed[i].end_ms != null && timed[i].end_ms > start) explicitEnd = timed[i].end_ms;
+      i++;
+    }
+    var end = explicitEnd != null
+      ? explicitEnd
+      : (i < timed.length ? timed[i].time_ms : start + 3000);
+    i--;
+    if (texts.length) lines.push([start, end, texts.join("\n")]);
   }
   return lines;
 }
 
-/** 行表 rows → Lyrico original Line[]（含词标签则逐词，否则整行） */
+/** 把原文行转换为 Lyrico 行，并在第 4 项保留 TTML 行属性。 */
 function originalToLines(rows) {
   var timed = (rows || []).filter(function (r) { return r.time_ms != null; })
     .sort(function (a, b) { return a.time_ms - b.time_ms; });
   var lines = [];
   for (var i = 0; i < timed.length; i++) {
     var start = timed[i].time_ms;
-    var end = (i + 1 < timed.length) ? timed[i + 1].time_ms : start + 3000;
+    var end = timed[i].end_ms != null && timed[i].end_ms > start
+      ? timed[i].end_ms
+      : ((i + 1 < timed.length) ? timed[i + 1].time_ms : start + 3000);
     var text = timed[i].text;
-    if (/<\d{1,6}>/.test(text)) {
-      lines.push([start, end, wordsOf(text, start, end)]);
+    var body = /<\d{1,6}(?::\d{1,6})?>/.test(text) ? wordsOf(text, start, end) : text;
+    // TTML 源拆出的行属性由 structured 协议第 4 项传回宿主。
+    var ext = null;
+    if (timed[i].attrs) {
+      for (var k in timed[i].attrs) {
+        if (!Object.prototype.hasOwnProperty.call(timed[i].attrs, k)) continue;
+        if (k === "itunes:key") continue;
+        if (typeof timed[i].attrs[k] !== "string" && typeof timed[i].attrs[k] !== "number" && typeof timed[i].attrs[k] !== "boolean") continue;
+        ext = ext || {};
+        var attrName = k === "itunes:songPart" ? "itunes:song-part" : String(k);
+        ext[attrName] = String(timed[i].attrs[k]);
+      }
+    }
+    if (timed[i].agent && !(ext && ext["ttm:agent"])) { ext = ext || {}; ext["ttm:agent"] = String(timed[i].agent); }
+    if (timed[i].song_part && !(ext && ext["itunes:song-part"])) { ext = ext || {}; ext["itunes:song-part"] = String(timed[i].song_part); }
+    if (timed[i].div_begin != null) { ext = ext || {}; ext.divBegin = String(timed[i].div_begin); }
+    if (timed[i].div_end != null) { ext = ext || {}; ext.divEnd = String(timed[i].div_end); }
+    if (ext) {
+      lines.push([start, end, body, ext]);
     } else {
-      lines.push([start, end, text]);
+      lines.push([start, end, body]);
     }
   }
   return lines;
@@ -285,8 +322,7 @@ function buildTags(fields, song) {
 
 /**
  * lyric_lines（versions 数组）→ Lyrico structured 的 original/translated/romanization。
- * Lyrico structured 的 translated/romanization 是「单一」Line[]：多语言译文合并进同一个
- * translated（同时间戳并列显示），保证打开翻译开关能看全所有译文（如东京盆踊 中+日 两行）。
+ * structured 只有一条翻译轨；同一时间的多语言译文合并为一行。
  */
 function buildStructuredFromVersions(lyricLines, fields, song) {
   var versions = lyricLines.versions || [];
@@ -296,7 +332,7 @@ function buildStructuredFromVersions(lyricLines, fields, song) {
   var credits = [];
   for (var i = 0; i < versions.length; i++) {
     var v = versions[i];
-    Platform.log.warn("LrcShare", "version: lang=" + v.lang + " kind=" + v.kind + " rows=" + (v.rows ? v.rows.length : 0));
+    Platform.log.debug("LrcShare", "version: lang=" + v.lang + " kind=" + v.kind + " rows=" + (v.rows ? v.rows.length : 0));
     if (v.kind === "original" && !originalVer) originalVer = v;
     else if (v.kind === "translation") translatedRows = translatedRows.concat(v.rows || []);
     else if (v.kind === "romanization") romanRows = romanRows.concat(v.rows || []);
@@ -314,16 +350,44 @@ function buildStructuredFromVersions(lyricLines, fields, song) {
   }
 
   var translatedLines = translatedRows.length ? plainToLines(translatedRows) : null;
-  var romanLines = romanRows.length ? plainToLines(romanRows) : null;
+  // 音译支持词级（逐字注音）：行内含 <偏移ms> 词标签时输出词数组（与 original 同构），否则整行
+  var romanLines = romanRows.length ? originalToLines(romanRows) : null;
   Platform.log.warn("LrcShare", "translated rows=" + translatedRows.length + " lines=" + (translatedLines ? translatedLines.length : 0) + " romanLines=" + (romanLines ? romanLines.length : 0));
 
-  return {
+  var out = {
     type: "structured",
     tags: buildTags(fields, song),
     original: original,
     translated: translatedLines,
     romanization: romanLines
   };
+  // 保留 structured 协议能够表达的 TTML head 和语言信息。
+  if (lyricLines.agents && lyricLines.agents.length) {
+    out.agents = lyricLines.agents;
+  }
+  if (lyricLines.metadata && lyricLines.metadata.length) {
+    out.metadata = lyricLines.metadata;
+  }
+  if (lyricLines.timing) {
+    out.timing = lyricLines.timing;
+  }
+  var originalLang = lyricLines.language
+    || (originalVer && (originalVer.ttml_lang || originalVer.lang))
+    || "";
+  if (originalLang) {
+    out.language = originalLang;
+  }
+  var translatedLangs = [];
+  var romanizationLangs = [];
+  for (var wi = 0; wi < versions.length; wi++) {
+    var wv = versions[wi];
+    var wvLang = wv.ttml_lang || wv.lang || "";
+    if (wv.kind === "translation" && wvLang && translatedLangs.indexOf(wvLang) === -1) translatedLangs.push(wvLang);
+    if (wv.kind === "romanization" && wvLang && romanizationLangs.indexOf(wvLang) === -1) romanizationLangs.push(wvLang);
+  }
+  if (translatedLangs.length === 1) out.translatedLang = translatedLangs[0];
+  if (romanizationLangs.length === 1) out.romanizationLang = romanizationLangs[0];
+  return out;
 }
 
 /** 单首歌 → 结构化歌词（优先多语言 versions；回退 raw LRC 解析） */

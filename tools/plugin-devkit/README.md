@@ -111,6 +111,14 @@ lyrico-plugin test ./my-plugin searchSongs --keyword "晴天" --config ./config.
 应分别测试插件声明的每一个能力。`searchSongs` 成功只能证明歌曲接口可用，不能证明
 `getLyrics` 的歌词请求、解密和返回结构也能工作。
 
+Devkit 会按 Android 宿主的规则解析 structured 歌词。`original` 和 `romanization` 可使用
+逐词行；行的第 4 项可携带 `ttm:agent`、`itunes:song-part`、`divBegin`、`divEnd` 等
+扩展属性。`agents`、`metadata`、`timing`、`language`、`translatedLang` 和
+`romanizationLang` 也会进入解析结果。字段说明和示例见
+[插件函数文档](../../../docs/plugins/plugin-functions.md)。
+
+修改 Devkit 后可运行 `npm run test:unit` 执行单元测试。
+
 ### pack
 
 打包插件目录：

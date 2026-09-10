@@ -33,7 +33,7 @@ export function parseSongResults(rawJson, plugin, { requireId = true } = {}) {
     .filter(Boolean);
 }
 
-export function parseLyricsCandidates(rawJson, plugin) {
+export function parseLyricsCandidates(rawJson, plugin, diagnostics = {}) {
   const root = parseJson(rawJson);
   if (root == null) return [];
   const items = Array.isArray(root)
@@ -42,7 +42,7 @@ export function parseLyricsCandidates(rawJson, plugin) {
 
   return items.map((item, index) => {
     if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
-    const lyrics = parseLyricsResult(JSON.stringify(item));
+    const lyrics = parseLyricsResult(JSON.stringify(item), diagnostics);
     if (!lyrics) return null;
     return {
       id: `${plugin.manifest.id}:lyrics:${index}`,
@@ -55,7 +55,7 @@ export function parseLyricsCandidates(rawJson, plugin) {
   }).filter(Boolean);
 }
 
-export function parseLyricsResult(rawJson) {
+export function parseLyricsResult(rawJson, { warnings = [] } = {}) {
   const root = parseJson(rawJson);
   if (root == null) return null;
   if (typeof root === 'string') {
@@ -99,7 +99,9 @@ export function parseLyricsResult(rawJson) {
 
   const original = parseCompactWordLines(firstArray(root, ['original', 'lines']) ?? []);
   const translated = parseCompactTextLines(firstArray(root, ['translated', 'translation', 'translations']) ?? []);
-  const romanization = parseCompactTextLines(firstArray(root, ['romanization', 'romanized', 'roma']) ?? []);
+  const romanization = parseCompactWordLines(firstArray(root, ['romanization', 'romanized', 'roma']) ?? []);
+  const agents = parseAgents(firstArray(root, ['agents']) ?? []);
+  const metadata = parseMetadata(firstArray(root, ['metadata']) ?? [], warnings);
   if (!original.length) return null;
 
   const result = {
@@ -107,6 +109,12 @@ export function parseLyricsResult(rawJson) {
     original,
     translated: translated.length ? translated : null,
     romanization: romanization.length ? romanization : null,
+    agents,
+    metadata,
+    timing: firstPrimitiveString(root, ['timing']) ?? '',
+    language: firstPrimitiveString(root, ['language']) ?? '',
+    translatedLang: firstPrimitiveString(root, ['translatedLang', 'translated_lang']) ?? '',
+    romanizationLang: firstPrimitiveString(root, ['romanizationLang', 'romanization_lang']) ?? '',
     type,
     isWordByWord: original.some(line => line.words.length > 1),
   };
@@ -163,11 +171,11 @@ export function validateFunctionResult(functionName, rawJson, plugin) {
     }
     if (functionName === 'getLyrics') {
       if (plugin.manifest.apiVersion >= 4) {
-        parsed = parseLyricsCandidates(rawJson, plugin);
+        parsed = parseLyricsCandidates(rawJson, plugin, { warnings });
         if (parsed.length === 0) warnings.push('getLyrics returned no usable lyrics candidates');
         validateApi4JudgementFields(parsed, 'lyrics candidate', errors);
       } else {
-        parsed = parseLyricsResult(rawJson);
+        parsed = parseLyricsResult(rawJson, { warnings });
         if (parsed == null) warnings.push('getLyrics returned no usable lyrics');
       }
     } else {
@@ -318,9 +326,97 @@ function parseCompactWordLines(lines) {
           text: String(word[2] ?? '')
         })).filter(word => word.text)
         : [{ start, end: Number.isFinite(end) ? end : start, text: String(wordsValue ?? '') }].filter(word => word.text);
-      return words.length ? { start, end: Number.isFinite(end) ? end : start, words } : null;
+      if (!words.length) return null;
+      const extensions = primitiveStringMap(
+        line[3] && typeof line[3] === 'object' && !Array.isArray(line[3]) ? line[3] : {}
+      );
+      const acceptedExtensions = Object.fromEntries(
+        Object.entries(extensions).filter(([key]) => {
+          const separator = key.indexOf(':');
+          const prefix = separator < 0 ? '' : key.slice(0, separator);
+          return prefix === '' || prefix === 'ttm' || prefix === 'itunes';
+        })
+      );
+      return {
+        start,
+        end: Number.isFinite(end) ? end : start,
+        words,
+        extensions: acceptedExtensions
+      };
     })
     .filter(Boolean);
+}
+
+function parseAgents(items) {
+  return items
+    .filter(item => item && typeof item === 'object' && !Array.isArray(item))
+    .map(item => {
+      const id = primitiveString(item.id);
+      if (id == null) return null;
+      return {
+        id,
+        type: primitiveString(item.type),
+        name: primitiveString(item.name)
+      };
+    })
+    .filter(Boolean);
+}
+
+const DUPLICATE_METADATA_NAMES = new Set(['translations', 'transliterations', 'ttm:agent']);
+
+function parseMetadata(items, warnings) {
+  return items.map(item => parseMetadataNode(item, warnings)).filter(Boolean).filter(node => {
+    if (node.name === 'songwriters') {
+      const valid = node.children.length > 0
+        && node.children.every(child => child.name === 'songwriter' && child.text?.trim());
+      if (!valid) {
+        warnings.push('metadata element "songwriters" must contain songwriter children with text; it was ignored');
+      }
+      return valid;
+    }
+    if (DUPLICATE_METADATA_NAMES.has(node.name)) {
+      warnings.push(`metadata element "${node.name}" duplicates a structured lyrics field; it was ignored`);
+      return false;
+    }
+    return true;
+  });
+}
+
+function parseMetadataNode(item, warnings) {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+  const name = primitiveString(item.name);
+  if (!name?.trim()) return null;
+  const namespace = primitiveString(item.namespace);
+  const separator = name.indexOf(':');
+  const prefix = separator < 0 ? '' : name.slice(0, separator);
+  if (prefix && !['ttm', 'itunes', 'xml'].includes(prefix) && !namespace?.trim()) {
+    warnings.push(`metadata element "${name}" uses a custom prefix without a namespace; it was ignored`);
+    return null;
+  }
+  return {
+    name,
+    namespace,
+    attributes: primitiveStringMap(item.attributes),
+    text: primitiveString(item.text),
+    children: Array.isArray(item.children)
+      ? item.children.map(child => parseMetadataNode(child, warnings)).filter(Boolean)
+      : []
+  };
+}
+
+function primitiveString(value) {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return null;
+}
+
+function primitiveStringMap(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([key, item]) => [key, primitiveString(item)])
+      .filter(([, item]) => item != null)
+  );
 }
 
 function parseCompactTextLines(lines) {
