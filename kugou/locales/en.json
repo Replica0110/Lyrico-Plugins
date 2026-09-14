@@ -1,0 +1,5 @@
+{
+  "plugin.name": "Kugou Music",
+  "plugin.description": "Kugou Music search source plugin",
+  "error.lyricsCandidate": "Lyrics candidate %1$s failed: %2$s"
+}

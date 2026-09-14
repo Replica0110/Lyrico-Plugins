@@ -1,0 +1,17 @@
+{
+  "plugin.name": "Soda Music",
+  "plugin.description": "Soda Music search source plugin",
+  "config.auth_notice.title": "Request authentication",
+  "group.request": "Requests",
+  "config.auth_notice.content": "Soda endpoints may answer anonymous requests with an empty HTTP 200 response. The plugin imitates Luna PC 3.5.1 by default; if risk control keeps triggering, fill in Cookie, X-Helios and X-Medusa from requests made by the Soda PC client. Credentials are sensitive data, do not share them.",
+  "config.device_id.title": "Device ID",
+  "config.device_id.summary": "device_id/fp of the Luna PC request; must match the credentials",
+  "config.iid.title": "Install ID",
+  "config.iid.summary": "iid of the Luna PC request; must match the credentials",
+  "config.cookies.title": "Cookie",
+  "group.auth": "Authentication",
+  "config.x_helios.title": "X-Helios",
+  "config.x_medusa.title": "X-Medusa",
+  "warn.shareLyricsFallback": "Share lyrics failed, falling back to track_v2: %1$s",
+  "error.lyricsCandidate": "Lyrics candidate %1$s failed: %2$s"
+}

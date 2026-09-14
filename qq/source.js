@@ -514,7 +514,7 @@ function getLyrics(request) {
       lyrics.tags.date = year;
       return lyrics;
     } catch (e) {
-      Platform.log.warn("QQ", "Lyrics candidate failed: " + String(e && e.message ? e.message : e));
+      Platform.log.warn("QQ", Platform.i18n.t("error.lyricsCandidate", String(song.title || song.id || ""), String(e && e.message ? e.message : e)));
       return null;
     }
   }).filter(Boolean);

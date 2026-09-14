@@ -6,6 +6,7 @@ import { loadPlugin } from './plugin-loader.js';
 import { createRuntime } from './runtime.js';
 import { validateFunctionResult } from './result-parser.js';
 import { writeZipFromDirectory } from './zip.js';
+import { loadStrings, localizeManifest } from './i18n.js';
 
 const COMMANDS = new Set(['validate', 'inspect', 'test', 'pack']);
 
@@ -57,14 +58,18 @@ async function commandInspect(args) {
     return;
   }
   const plugin = await loadPlugin(pluginPath);
+  const strings = await loadStrings(plugin.root, plugin.manifest, String(flags.locales || 'en').split(','));
+  const display = localizeManifest(plugin.manifest, strings);
   const summary = {
     id: plugin.manifest.id,
-    name: plugin.manifest.name,
+    name: display.name,
+    description: display.description,
+    locale: strings.getLocale(),
     versionCode: plugin.manifest.versionCode,
     versionName: plugin.manifest.versionName,
     apiVersion: plugin.manifest.apiVersion,
     capabilities: effectiveCapabilities(plugin.manifest),
-    configFields: (plugin.manifest.configFields ?? []).map(field => ({ key: field.key, type: field.type, required: !!field.required })),
+    configFields: display.configFields,
     files: plugin.files
   };
 
@@ -99,12 +104,13 @@ async function commandTest(args) {
   const plugin = await loadPlugin(pluginPath);
   const config = await loadConfig(flags.config);
   const request = await buildRequest(functionName, flags, config);
-  const runtime = await createRuntime(plugin, { echoLogs: flags.logs });
+  const runtime = await createRuntime(plugin, { echoLogs: flags.logs, locales: String(flags.locales || 'en').split(',') });
   const callResult = await runtime.call(functionName, request);
-  const checked = validateFunctionResult(functionName, callResult.raw, plugin);
+  const display = localizeManifest(plugin.manifest, runtime.host.api.i18n);
+  const checked = validateFunctionResult(functionName, callResult.raw, { ...plugin, manifest: display });
 
   const output = {
-    plugin: { id: plugin.manifest.id, name: plugin.manifest.name },
+    plugin: { id: plugin.manifest.id, name: display.name },
     functionName,
     durationMs: callResult.durationMs,
     request,
@@ -258,11 +264,12 @@ function printHelp() {
 
 Usage:
   lyrico-plugin validate <plugin-dir> [--json]
-  lyrico-plugin inspect <plugin-dir> [--json]
+  lyrico-plugin inspect <plugin-dir> [--json] [--locales <tags>]
   lyrico-plugin test <plugin-dir> <searchSongs|getLyrics|searchCovers> [options]
   lyrico-plugin pack <plugin-dir> [--out <zip-file>]
 
 Test options:
+  --locales <tags>          UI language preferences, e.g. zh-CN,en (default: en)
   --keyword <text>          Keyword for searchSongs/searchCovers
   --page <n>                Page for searchSongs/getLyrics/searchCovers
   --page-size <n>           Page size

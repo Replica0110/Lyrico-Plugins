@@ -1,0 +1,12 @@
+{
+  "plugin.description": "LrcShare 歌词站搜索源：歌词、专辑封面、元数据，匿名调用无需配置密钥；多语言歌词（原文/译文/罗马音）结构化返回",
+  "config.enrich.title": "完整元数据",
+  "group.search": "搜索",
+  "config.enrich.summary": "搜索时逐首拉取词曲作者、音轨号、备注与歌词，用于完整打标；关闭则仅返回摘要，速度更快",
+  "config.timeout.title": "超时（秒）",
+  "group.request": "请求",
+  "config.timeout.summary": "API 请求超时时间",
+  "warn.enrichFailed": "歌曲 %1$s 的元数据补全失败：%2$s",
+  "error.searchSongsFailed": "歌曲搜索失败：%1$s",
+  "error.getLyricsFailed": "歌词获取失败：%1$s"
+}

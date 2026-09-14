@@ -133,7 +133,7 @@ function enrichSong(song, config, separator) {
       song.internal.lyric_lines = detail.lyric_lines;
     }
   } catch (e) {
-    Platform.log.warn("LrcShare", "enrich failed for " + trackId + ": " + (e && e.message ? e.message : e));
+    Platform.log.warn("LrcShare", Platform.i18n.t("warn.enrichFailed", String(trackId), String(e && e.message ? e.message : e)));
   }
 }
 
@@ -212,7 +212,7 @@ function searchSongs(request) {
 
     return songs;
   } catch (e) {
-    Platform.log.error("LrcShare", "searchSongs failed: " + (e && e.message ? e.message : e));
+    Platform.log.error("LrcShare", Platform.i18n.t("error.searchSongsFailed", String(e && e.message ? e.message : e)));
     return [];
   }
 }
@@ -421,7 +421,7 @@ function getLyricsForSong(request, song) {
       if (!detail || !detail.lrc) return null;
       lrcText = detail.lrc;
     } catch (e) {
-      Platform.log.warn("LrcShare", "getLyrics failed: " + (e && e.message ? e.message : e));
+      Platform.log.warn("LrcShare", Platform.i18n.t("error.getLyricsFailed", String(e && e.message ? e.message : e)));
       return null;
     }
   }

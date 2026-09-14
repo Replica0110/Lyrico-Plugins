@@ -1,0 +1,9 @@
+{
+  "plugin.name": "QQ Music",
+  "plugin.description": "QQ Music search source plugin",
+  "config.cover_size.title": "Artwork size",
+  "config.cover_size.summary": "QQ Music artwork dimensions",
+  "config.replaygain.title": "ReplayGain",
+  "config.replaygain.summary": "Fetch ReplayGain information while searching songs",
+  "error.lyricsCandidate": "Lyrics candidate %1$s failed: %2$s"
+}

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 
 const args = parseArgs(process.argv.slice(2));
 const root = path.resolve(args.root ?? '.');
@@ -13,6 +14,7 @@ const keyword = String(args.keyword ?? process.env.LYRICO_PLUGIN_TEST_KEYWORD ??
 const pageSize = String(args.pageSize ?? process.env.LYRICO_PLUGIN_TEST_PAGE_SIZE ?? '1');
 
 await ensureFile(devkit, 'Plugin devkit CLI');
+const { loadStrings, localizeManifest } = await import(pathToFileURL(path.join(path.dirname(devkit), 'i18n.js')));
 const plugins = await discoverPlugins(root);
 if (plugins.length === 0) {
   throw new Error(`No plugin manifest found under ${root}`);
@@ -26,7 +28,8 @@ if (importableOutDir) {
 for (const plugin of plugins) {
   const rel = path.relative(root, plugin.root) || '.';
   const output = path.join(outDir, `${plugin.manifest.id}-${plugin.manifest.versionName}.zip`);
-  console.log(`\n== ${plugin.manifest.name} (${rel}) ==`);
+  const display = localizeManifest(plugin.manifest, await loadStrings(plugin.root, plugin.manifest));
+  console.log(`\n== ${display.name} (${rel}) ==`);
   await run('node', [devkit, 'validate', plugin.root]);
   await run('node', [devkit, 'pack', plugin.root, '--out', output]);
   if (importableOutDir) {

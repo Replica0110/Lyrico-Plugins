@@ -1,10 +1,10 @@
 {
   "id": "com.neteasecloudmusic.source",
-  "name": "网易云音乐",
-  "versionCode": 7,
-  "versionName": "0.3.1",
+  "name": "@plugin.name",
+  "versionCode": 9,
+  "versionName": "0.4.1",
   "author": "Replica0110",
-  "description": "网易云搜索源插件",
+  "description": "@plugin.description",
   "apiVersion": 4,
   "includeDirs": [
     "lib"
@@ -16,29 +16,37 @@
     "getLyrics",
     "searchCovers"
   ],
-  "minHostApiVersion": 3,
+  "minHostApiVersion": 4,
   "configFields": [
     {
       "key": "comment_content",
-      "title": "注释写入内容",
-      "summary": "控制搜索结果写入注释字段的内容",
-      "group": "元数据",
+      "title": "@config.comment_content.title",
+      "summary": "@config.comment_content.summary",
+      "group": "@group.metadata",
       "type": "dropdown",
       "defaultValue": "alias",
       "options": [
         {
           "value": "none",
-          "label": "不写入"
+          "label": "@config.comment_content.option.none"
         },
         {
           "value": "alias",
-          "label": "歌曲别名"
+          "label": "@config.comment_content.option.alias"
         },
         {
           "value": "netease_163_key",
-          "label": "网易云 163key"
+          "label": "@config.comment_content.option.netease_163_key"
         }
       ]
     }
-  ]
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "resources": {
+      "en": "locales/en.json",
+      "zh-Hans": "locales/zh-Hans.json",
+      "zh-Hant": "locales/zh-Hant.json"
+    }
+  }
 }

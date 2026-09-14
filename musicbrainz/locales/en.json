@@ -1,0 +1,13 @@
+{
+  "plugin.description": "MusicBrainz metadata source: song search, album artwork, composers and genres (no lyrics support)",
+  "config.enrich.title": "Full metadata",
+  "group.search": "Search",
+  "config.enrich.summary": "Enriches composers and genres while searching. MusicBrainz rate limits (about 1 request/second) confine each search to the first few results; repeated searches fill in the rest from cache",
+  "config.enrich_limit.title": "Enrichment limit",
+  "config.enrich_limit.summary": "Maximum number of songs enriched with composers and genres per search",
+  "config.timeout.title": "Timeout (seconds)",
+  "group.request": "Requests",
+  "config.timeout.summary": "API request timeout",
+  "error.searchSongsFailed": "Song search failed: %1$s",
+  "error.searchCoversFailed": "Artwork search failed: %1$s"
+}

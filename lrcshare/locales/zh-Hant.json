@@ -1,0 +1,12 @@
+{
+  "plugin.description": "LrcShare 歌詞站搜尋來源：歌詞、專輯封面、中繼資料，匿名呼叫無需設定金鑰；多語言歌詞（原文/譯文/羅馬音）以結構化格式回傳",
+  "config.enrich.title": "完整中繼資料",
+  "group.search": "搜尋",
+  "config.enrich.summary": "搜尋時逐首拉取詞曲作者、音軌號、備註與歌詞，用於完整打標；關閉則僅回傳摘要，速度更快",
+  "config.timeout.title": "逾時（秒）",
+  "group.request": "請求",
+  "config.timeout.summary": "API 請求逾時時間",
+  "warn.enrichFailed": "歌曲 %1$s 的中繼資料補全失敗：%2$s",
+  "error.searchSongsFailed": "歌曲搜尋失敗：%1$s",
+  "error.getLyricsFailed": "歌詞取得失敗：%1$s"
+}

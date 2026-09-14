@@ -1,0 +1,14 @@
+{
+  "plugin.name": "网易云音乐",
+  "plugin.description": "网易云搜索源插件",
+  "config.comment_content.title": "注释写入内容",
+  "group.metadata": "元数据",
+  "config.comment_content.summary": "控制搜索结果写入注释字段的内容",
+  "config.comment_content.option.none": "不写入",
+  "config.comment_content.option.alias": "歌曲别名",
+  "config.comment_content.option.netease_163_key": "网易云 163key",
+  "warn.resolveSongDate": "专辑发行日期获取失败：%1$s",
+  "warn.buildCommentKey": "网易云 163key 生成失败：%1$s",
+  "warn.eapiSearchFallback": "EAPI 搜索失败，回退到 cloudsearch：%1$s",
+  "error.lyricsCandidate": "歌曲 %1$s 的歌词候选获取失败：%2$s"
+}

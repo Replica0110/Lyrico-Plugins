@@ -1,0 +1,14 @@
+{
+  "plugin.name": "NetEase Cloud Music",
+  "plugin.description": "NetEase Cloud Music search source plugin",
+  "config.comment_content.title": "Comment content",
+  "group.metadata": "Metadata",
+  "config.comment_content.summary": "Content written into the comment field by search results",
+  "config.comment_content.option.none": "Write nothing",
+  "config.comment_content.option.alias": "Song alias",
+  "config.comment_content.option.netease_163_key": "NetEase 163key",
+  "warn.resolveSongDate": "Album release date lookup failed: %1$s",
+  "warn.buildCommentKey": "163key generation failed: %1$s",
+  "warn.eapiSearchFallback": "EAPI search failed, falling back to cloud search: %1$s",
+  "error.lyricsCandidate": "Lyrics candidate %1$s failed: %2$s"
+}

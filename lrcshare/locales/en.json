@@ -1,0 +1,12 @@
+{
+  "plugin.description": "LrcShare lyrics site source: lyrics, album artwork and metadata through anonymous access without API keys; multilingual lyrics (original/translation/romanization) returned as structured data",
+  "config.enrich.title": "Full metadata",
+  "group.search": "Search",
+  "config.enrich.summary": "Fetch lyricists, track numbers, comments and lyrics for every result while searching, for complete tagging; turn it off to return summaries only and search faster",
+  "config.timeout.title": "Timeout (seconds)",
+  "group.request": "Requests",
+  "config.timeout.summary": "API request timeout",
+  "warn.enrichFailed": "Metadata enrichment failed for %1$s: %2$s",
+  "error.searchSongsFailed": "Song search failed: %1$s",
+  "error.getLyricsFailed": "Lyrics fetch failed: %1$s"
+}

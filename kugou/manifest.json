@@ -1,10 +1,10 @@
 {
   "id": "com.kugou.source",
-  "name": "酷狗音乐",
-  "versionCode": 5,
-  "versionName": "0.3.0",
+  "name": "@plugin.name",
+  "versionCode": 7,
+  "versionName": "0.4.1",
   "author": "Replica0110",
-  "description": "酷狗搜索源插件",
+  "description": "@plugin.description",
   "apiVersion": 4,
   "includeDirs": [
     "lib"
@@ -16,5 +16,13 @@
     "getLyrics",
     "searchCovers"
   ],
-  "minHostApiVersion": 1
+  "minHostApiVersion": 4,
+  "i18n": {
+    "defaultLocale": "en",
+    "resources": {
+      "en": "locales/en.json",
+      "zh-Hans": "locales/zh-Hans.json",
+      "zh-Hant": "locales/zh-Hant.json"
+    }
+  }
 }

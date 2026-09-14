@@ -74,7 +74,7 @@ function resolveSongDate(song) {
   } catch (e) {
     Platform.log.warn(
       "NE",
-      "Resolve song date failed: " + String(e && e.message ? e.message : e)
+      Platform.i18n.t("warn.resolveSongDate", String(e && e.message ? e.message : e))
     );
     return "";
   }
@@ -150,7 +150,7 @@ function build163Key(song) {
       Platform.crypto.aesEcbPkcs5EncryptBase64("music:" + json, AES_163_KEY)
     );
   } catch (e) {
-    Platform.log.warn("NE", "build163Key failed: " + String(e && e.message ? e.message : e));
+    Platform.log.warn("NE", Platform.i18n.t("warn.buildCommentKey", String(e && e.message ? e.message : e)));
     return "";
   }
 }
@@ -296,8 +296,10 @@ function searchSongs(request) {
   } catch (e) {
     Platform.log.warn(
       "NE",
-      "EAPI search failed, fallback to cloudsearch: " +
+      Platform.i18n.t(
+        "warn.eapiSearchFallback",
         String(e && e.message ? e.message : e)
+      )
     );
 
     return searchSongsByCloudSearchFallback(request);
@@ -408,7 +410,7 @@ function getLyrics(request) {
       lyrics.tags.date = date;
       return lyrics;
     } catch (e) {
-      Platform.log.warn("NE", "Lyrics candidate failed: " + String(e && e.message ? e.message : e));
+      Platform.log.warn("NE", Platform.i18n.t("error.lyricsCandidate", String(song.title || song.id || ""), String(e && e.message ? e.message : e)));
       return null;
     }
   }).filter(Boolean);

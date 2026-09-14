@@ -1,0 +1,13 @@
+{
+  "plugin.description": "MusicBrainz 中繼資料來源：歌曲搜尋、專輯封面、詞曲作者、曲風（無歌詞能力）",
+  "config.enrich.title": "完整中繼資料",
+  "group.search": "搜尋",
+  "config.enrich.summary": "搜尋時補全詞曲作者與曲風。受 MusicBrainz 限流（約 1 請求/秒）影響，每次僅補全前幾首，重複搜尋命中快取後逐步補全",
+  "config.enrich_limit.title": "補全數量",
+  "config.enrich_limit.summary": "每次搜尋最多補全前 N 首歌曲的詞曲作者與曲風",
+  "config.timeout.title": "逾時（秒）",
+  "group.request": "請求",
+  "config.timeout.summary": "API 請求逾時時間",
+  "error.searchSongsFailed": "歌曲搜尋失敗：%1$s",
+  "error.searchCoversFailed": "封面搜尋失敗：%1$s"
+}

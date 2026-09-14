@@ -1,0 +1,9 @@
+{
+  "plugin.name": "QQ音乐",
+  "plugin.description": "QQ音乐搜索源插件",
+  "config.cover_size.title": "封面大小",
+  "config.cover_size.summary": "QQ 音乐封面图片尺寸",
+  "config.replaygain.title": "回放增益",
+  "config.replaygain.summary": "搜索歌曲时获取回放增益信息",
+  "error.lyricsCandidate": "歌曲 %1$s 的歌词候选获取失败：%2$s"
+}

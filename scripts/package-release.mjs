@@ -11,6 +11,7 @@ const stagingRoot = path.resolve(args.staging ?? '.release-staging/Lyrico-Plugin
 
 await ensureFile(devkit, 'Plugin devkit CLI');
 const { writeZipFromDirectory } = await import(pathToFileURL(path.join(path.dirname(devkit), 'zip.js')));
+const { loadStrings, localizeManifest } = await import(pathToFileURL(path.join(path.dirname(devkit), 'i18n.js')));
 const plugins = await discoverPlugins(root);
 if (plugins.length === 0) {
   throw new Error(`No plugin manifest found under ${root}`);
@@ -24,15 +25,17 @@ await fs.promises.mkdir(stagingRoot, { recursive: true });
 const assets = [];
 const packagedPlugins = [];
 for (const plugin of plugins) {
+  const display = localizeManifest(plugin.manifest, await loadStrings(plugin.root, plugin.manifest, ['zh-CN', 'en']));
   const rel = path.relative(root, plugin.root) || path.basename(plugin.root);
   const output = path.join(outDir, `${plugin.manifest.id}-${plugin.manifest.versionName}.zip`);
-  console.log(`Packing ${plugin.manifest.name} from ${rel}`);
+  console.log(`Packing ${display.name} from ${rel}`);
   await run('node', [devkit, 'pack', plugin.root, '--out', output]);
   await copyDir(plugin.root, path.join(stagingRoot, rel));
   const asset = path.basename(output);
   assets.push(asset);
   packagedPlugins.push({
     ...plugin,
+    manifest: display,
     asset,
     root: rel.replaceAll(path.sep, '/')
   });

@@ -1,0 +1,17 @@
+{
+  "plugin.name": "汽水音樂",
+  "plugin.description": "汽水音樂搜尋來源外掛",
+  "config.auth_notice.title": "請求認證說明",
+  "group.request": "請求",
+  "config.auth_notice.content": "汽水介面可能對匿名請求回傳 HTTP 200 空回應。外掛預設模擬 Luna PC 3.5.1；若持續觸發風險控管，可從汽水 PC 客戶端請求中填寫 Cookie、X-Helios 和 X-Medusa。認證資訊屬於敏感資料，請勿分享。",
+  "config.device_id.title": "Device ID",
+  "config.device_id.summary": "Luna PC 請求的 device_id/fp；需與認證資訊對應",
+  "config.iid.title": "Install ID",
+  "config.iid.summary": "Luna PC 請求的 iid；需與認證資訊對應",
+  "config.cookies.title": "Cookie",
+  "group.auth": "認證",
+  "config.x_helios.title": "X-Helios",
+  "config.x_medusa.title": "X-Medusa",
+  "warn.shareLyricsFallback": "分享歌詞取得失敗，回退到 track_v2：%1$s",
+  "error.lyricsCandidate": "歌曲 %1$s 的歌詞候選取得失敗：%2$s"
+}

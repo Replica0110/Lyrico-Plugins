@@ -1,0 +1,5 @@
+{
+  "plugin.name": "酷狗音乐",
+  "plugin.description": "酷狗搜索源插件",
+  "error.lyricsCandidate": "歌曲 %1$s 的歌词候选获取失败：%2$s"
+}

@@ -1,7 +1,7 @@
 export const MIN_PLUGIN_PROTOCOL_VERSION = 1;
 export const PLUGIN_PROTOCOL_VERSION = 4;
 export const MIN_PLATFORM_API_VERSION = 1;
-export const PLATFORM_API_VERSION = 3;
+export const PLATFORM_API_VERSION = 4;
 
 export const CAPABILITIES = new Set([
   'searchSongs',

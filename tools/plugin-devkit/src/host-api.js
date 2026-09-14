@@ -15,7 +15,7 @@ export function createHostApi(options = {}) {
   const cacheStore = new Map();
   const runtimeInfo = {
     pluginApiVersion: 4,
-    hostApiVersion: 3,
+    hostApiVersion: 4,
     engine: 'node-vm',
     engineVersion: process.version,
     supportedHostApis: [

@@ -1,0 +1,14 @@
+{
+  "plugin.name": "網易雲音樂",
+  "plugin.description": "網易雲搜尋來源外掛",
+  "config.comment_content.title": "注釋寫入內容",
+  "group.metadata": "中繼資料",
+  "config.comment_content.summary": "控制搜尋結果寫入注釋欄位的內容",
+  "config.comment_content.option.none": "不寫入",
+  "config.comment_content.option.alias": "歌曲別名",
+  "config.comment_content.option.netease_163_key": "網易雲 163key",
+  "warn.resolveSongDate": "專輯發行日期取得失敗：%1$s",
+  "warn.buildCommentKey": "網易雲 163key 產生失敗：%1$s",
+  "warn.eapiSearchFallback": "EAPI 搜尋失敗，回退到 cloudsearch：%1$s",
+  "error.lyricsCandidate": "歌曲 %1$s 的歌詞候選取得失敗：%2$s"
+}

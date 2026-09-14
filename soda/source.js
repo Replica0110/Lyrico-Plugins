@@ -167,7 +167,7 @@ function getLyricsForSong(request, song) {
     try {
       raw = shareLyricsToLrc(getShareTrackData(trackId));
     } catch (error) {
-      Platform.log.warn("SODA", "Share lyrics failed, falling back to track_v2: " + String(error && error.message ? error.message : error));
+      Platform.log.warn("SODA", Platform.i18n.t("warn.shareLyricsFallback", String(error && error.message ? error.message : error)));
     }
   }
 
@@ -228,7 +228,7 @@ function getLyrics(request) {
       lyrics.tags.date = year;
       return lyrics;
     } catch (e) {
-      Platform.log.warn("SODA", "Lyrics candidate failed: " + String(e && e.message ? e.message : e));
+      Platform.log.warn("SODA", Platform.i18n.t("error.lyricsCandidate", String(song.title || song.id || ""), String(e && e.message ? e.message : e)));
       return null;
     }
   }).filter(Boolean);

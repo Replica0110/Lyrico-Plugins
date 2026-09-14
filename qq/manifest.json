@@ -1,10 +1,10 @@
 {
   "id": "com.qqmusic.source",
-  "name": "QQ音乐",
-  "versionCode": 5,
-  "versionName": "0.3.0",
+  "name": "@plugin.name",
+  "versionCode": 7,
+  "versionName": "0.4.1",
   "author": "Replica0110",
-  "description": "QQ音乐搜索源插件",
+  "description": "@plugin.description",
   "apiVersion": 4,
   "includeDirs": [
     "lib"
@@ -19,8 +19,8 @@
   "configFields": [
     {
       "key": "cover_size",
-      "title": "封面大小",
-      "summary": "QQ 音乐封面图片尺寸",
+      "title": "@config.cover_size.title",
+      "summary": "@config.cover_size.summary",
       "type": "dropdown",
       "required": true,
       "defaultValue": "1200",
@@ -41,11 +41,19 @@
     },
     {
       "key": "replaygain",
-      "title": "回放增益",
-      "summary": "搜索歌曲时获取回放增益信息",
+      "title": "@config.replaygain.title",
+      "summary": "@config.replaygain.summary",
       "type": "switch",
-      "defaultValue": true
+      "defaultValue": "true"
     }
   ],
-  "minHostApiVersion": 1
+  "minHostApiVersion": 4,
+  "i18n": {
+    "defaultLocale": "en",
+    "resources": {
+      "en": "locales/en.json",
+      "zh-Hans": "locales/zh-Hans.json",
+      "zh-Hant": "locales/zh-Hant.json"
+    }
+  }
 }

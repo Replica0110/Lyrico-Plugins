@@ -1,45 +1,51 @@
 {
   "id": "com.applemusic.source",
   "name": "Apple Music",
-  "versionCode": 6,
-  "versionName": "0.3.0",
+  "versionCode": 8,
+  "versionName": "0.4.1",
   "author": "Replica0110",
-  "description": "Apple Music 搜索源插件",
+  "description": "@plugin.description",
   "apiVersion": 4,
-  "includeDirs": ["lib"],
+  "includeDirs": [
+    "lib"
+  ],
   "icon": "icon.png",
   "entry": "source.js",
-  "capabilities": ["searchSongs", "getLyrics", "searchCovers"],
+  "capabilities": [
+    "searchSongs",
+    "getLyrics",
+    "searchCovers"
+  ],
   "configFields": [
     {
       "key": "lyrics_provider_notice",
-      "title": "歌词源说明",
-      "group": "歌词",
+      "title": "@config.lyrics_provider_notice.title",
+      "group": "@group.lyrics",
       "type": "markdown",
-      "defaultValue": "### 歌词源说明\n\n- **第三方**：通过 [PaxSenix Apple Music Lyrics](https://lyrics.paxsenix.org/apple-music/lyrics) 获取歌词，不需要 Apple Music 登录态。\n- **官方**：通过 Apple Music 官方接口获取歌词，需要填写网页登录态 Cookie 中的 `media-user-token`。\n\n官方源限制：\n\n- `media-user-token` 所属地区需要与下方选择的地区一致。\n- `media-user-token` 会过期，失效后需要重新获取。\n- 高频请求或批量匹配可能触发 Apple 风控、限流或临时封禁。\n- 只有账号和地区有权限访问的歌曲才可能返回官方歌词。"
+      "defaultValue": "@config.lyrics_provider_notice.content"
     },
     {
       "key": "lyrics_provider",
-      "title": "歌词源",
-      "group": "歌词",
+      "title": "@config.lyrics_provider.title",
+      "group": "@group.lyrics",
       "type": "dropdown",
       "required": true,
       "defaultValue": "third_party",
       "options": [
         {
           "value": "third_party",
-          "label": "第三方"
+          "label": "@config.lyrics_provider.option.third_party"
         },
         {
           "value": "official",
-          "label": "官方"
+          "label": "@config.lyrics_provider.option.official"
         }
       ]
     },
     {
       "key": "media_user_token",
-      "title": "Media User Token",
-      "group": "歌词",
+      "title": "@config.media_user_token.title",
+      "group": "@group.lyrics",
       "type": "password",
       "required": true,
       "defaultValue": "",
@@ -52,96 +58,96 @@
     },
     {
       "key": "region",
-      "title": "地区",
-      "summary": "用于 Apple Music catalog storefront，例如 cn/us/jp。需要和 media-user-token 所属地区匹配",
-      "group": "请求",
+      "title": "@config.region.title",
+      "summary": "@config.region.summary",
+      "group": "@group.request",
       "type": "dropdown",
       "required": true,
       "defaultValue": "cn",
       "options": [
         {
           "value": "cn",
-          "label": "中国大陆",
+          "label": "@config.region.option.cn",
           "summary": "cn"
         },
         {
           "value": "us",
-          "label": "美国",
+          "label": "@config.region.option.us",
           "summary": "us"
         },
         {
           "value": "jp",
-          "label": "日本",
+          "label": "@config.region.option.jp",
           "summary": "jp"
         },
         {
           "value": "kr",
-          "label": "韩国",
+          "label": "@config.region.option.kr",
           "summary": "kr"
         },
         {
           "value": "tr",
-          "label": "土耳其",
+          "label": "@config.region.option.tr",
           "summary": "tr"
         },
         {
           "value": "hk",
-          "label": "香港",
+          "label": "@config.region.option.hk",
           "summary": "hk"
         },
         {
           "value": "tw",
-          "label": "台湾",
+          "label": "@config.region.option.tw",
           "summary": "tw"
         }
       ]
     },
     {
       "key": "language",
-      "title": "语言",
-      "summary": "用于 Apple Music localization 参数",
-      "group": "请求",
+      "title": "@config.language.title",
+      "summary": "@config.language.summary",
+      "group": "@group.request",
       "type": "dropdown",
       "required": true,
       "defaultValue": "zh-Hans",
       "options": [
         {
           "value": "zh-Hans",
-          "label": "简体中文",
+          "label": "@config.language.option.zh-Hans",
           "summary": "zh-Hans"
         },
         {
           "value": "zh-Hant",
-          "label": "繁体中文",
+          "label": "@config.language.option.zh-Hant",
           "summary": "zh-Hant"
         },
         {
           "value": "en-US",
-          "label": "English",
+          "label": "@config.language.option.en-US",
           "summary": "en-US"
         },
         {
           "value": "ja-JP",
-          "label": "日本語",
+          "label": "@config.language.option.ja-JP",
           "summary": "ja-JP"
         },
         {
           "value": "ko-KR",
-          "label": "한국어",
+          "label": "@config.language.option.ko-KR",
           "summary": "ko-KR"
         },
         {
           "value": "tr-TR",
-          "label": "Türkçe",
+          "label": "@config.language.option.tr-TR",
           "summary": "tr-TR"
         }
       ]
     },
     {
       "key": "cover_size",
-      "title": "封面大小",
-      "summary": "Apple Music 封面图片尺寸",
-      "group": "封面",
+      "title": "@config.cover_size.title",
+      "summary": "@config.cover_size.summary",
+      "group": "@group.cover",
       "type": "dropdown",
       "required": true,
       "defaultValue": "3000",
@@ -161,5 +167,13 @@
       ]
     }
   ],
-  "minHostApiVersion": 3
+  "minHostApiVersion": 4,
+  "i18n": {
+    "defaultLocale": "en",
+    "resources": {
+      "en": "locales/en.json",
+      "zh-Hans": "locales/zh-Hans.json",
+      "zh-Hant": "locales/zh-Hant.json"
+    }
+  }
 }
