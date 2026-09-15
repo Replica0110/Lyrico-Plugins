@@ -1,8 +1,8 @@
 {
   "id": "com.qqmusic.source",
   "name": "@plugin.name",
-  "versionCode": 7,
-  "versionName": "0.4.1",
+  "versionCode": 8,
+  "versionName": "0.4.2",
   "author": "Replica0110",
   "description": "@plugin.description",
   "apiVersion": 4,

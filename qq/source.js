@@ -37,6 +37,13 @@ function mapSong(item, request) {
   const subtitle = item.subtitle || item.desc || "";
   if (subtitle) fields.comment = String(subtitle);
 
+  // QQ uses a zero-based disc index; tags use one-based disc numbers.
+  const discIndex = item.index_cd;
+  if (typeof discIndex === "number" && Number.isSafeInteger(discIndex) &&
+      discIndex >= 0 && discIndex < Number.MAX_SAFE_INTEGER) {
+    fields.disc_number = String(discIndex + 1);
+  }
+
   if (item.volume) {
     const cfg = request.config || {};
     const rgOff = cfg.replaygain === false || cfg.replaygain === "false";
