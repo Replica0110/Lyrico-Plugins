@@ -1,5 +1,7 @@
 # Lyrico Plugin Devkit
 
+当前校验范围为插件协议 API1–5、Host API1–4。API5 对应歌词载荷扩展（逐词音译、TTML 元数据与 Ruby）；国际化属于 Host API4。
+
 桌面端插件调试验证工具，用于在开发机上验证 Lyrico 搜索源插件。
 
 ## 使用方式
@@ -46,7 +48,7 @@ lyrico-plugin validate ./my-plugin
 - 运行结果中的 `fields` 是否只使用宿主标准字段
 - `internal` 是否满足数量和大小限制
 
-API 版本按向下兼容规则校验：当前插件协议版本 4 接受 `apiVersion` 1、2、3、4；`Platform` 宿主 API 版本为 3，插件的 `minHostApiVersion` 不得高于 3。
+API 版本按向下兼容规则校验：当前插件协议版本 5 接受 `apiVersion` 1、2、3、4、5；`Platform` 宿主 API 版本为 4，插件的 `minHostApiVersion` 不得高于 4。
 
 `configFields` 支持 `text`、`password`、`number`、`switch`、`dropdown`、`textarea` 和只展示说明、不写入运行时配置的 `markdown` 类型。
 

@@ -5,7 +5,7 @@
   "versionName": "1.2.1",
   "author": "X2ISPANDA",
   "description": "@plugin.description",
-  "apiVersion": 4,
+  "apiVersion": 5,
   "entry": "source.js",
   "includeDirs": [
     "lib"

@@ -1,5 +1,7 @@
 # Lyrico 插件
 
+本仓库插件现声明 `apiVersion: 5`，需要支持插件协议 API5 的 Lyrico。API5 扩展歌词返回格式以保留 TTML 信息；宿主 API 仍为 4，`minHostApiVersion` 按实际使用的接口声明。
+
 [Lyrico](https://github.com/Replica0110/Lyrico) 的官方搜索源插件集合。
 
 为 Lyrico 提供来自各大音乐平台的歌曲搜索、歌词获取和封面搜索能力。安装插件后，你可以在 Lyrico 中直接搜索和补全歌曲信息。

@@ -1,3 +1,4 @@
+import { PLUGIN_PROTOCOL_VERSION, PLATFORM_API_VERSION } from './spec.js';
 import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
@@ -14,8 +15,8 @@ export function createHostApi(options = {}) {
   };
   const cacheStore = new Map();
   const runtimeInfo = {
-    pluginApiVersion: 4,
-    hostApiVersion: 4,
+    pluginApiVersion: PLUGIN_PROTOCOL_VERSION,
+    hostApiVersion: PLATFORM_API_VERSION,
     engine: 'node-vm',
     engineVersion: process.version,
     supportedHostApis: [
