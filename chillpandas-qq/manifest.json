@@ -1,0 +1,138 @@
+{
+  "id": "com.chillpandas.qqmusic.meta",
+  "name": "QQ 音乐 · 元数据增强",
+  "versionCode": 6,
+  "versionName": "1.0.5",
+  "author": "ChillPandas",
+  "description": "搜索 QQ 音乐歌曲元数据和逐字歌词，额外补全作词、作曲、专辑艺术家、流派、语种和唱片公司",
+  "apiVersion": 5,
+  "minHostApiVersion": 3,
+  "entry": "source.js",
+  "includeDirs": [
+    "lib"
+  ],
+  "icon": "icon.png",
+  "capabilities": [
+    "searchSongs",
+    "getLyrics",
+    "searchCovers"
+  ],
+  "configFields": [
+    {
+      "key": "help",
+      "title": "说明",
+      "type": "markdown",
+      "defaultValue": "### 能获取的标签\n\n**搜索结果自带**：标题、艺术家、专辑、日期、音轨号、碟号、封面、备注（歌曲副标题）、回放增益（音轨增益、音轨峰值、参考响度）\n\n**补全详情**（开关在下面）：专辑艺术家、流派、语种、版权（唱片公司）、作词、作曲（作词作曲取自歌词开头的署名行）\n\n**歌词**：逐字歌词（QRC），没有时用逐行歌词；带翻译和罗马音，各占一行，下面的开关可以分别关掉。罗马音按整行输出：拉丁音节之间一个空格，中文（比如酷狗的中文谐音）不加空格。输出成逐行 LRC、逐字 LRC、增强型 LRC（`[00:12.34] <00:12.34>字<00:12.80>…`）还是 TTML，在 Lyrico 的歌词格式设置里选。\n\n**同一首歌的多个专辑版本**：全部列出（单曲、专辑、合辑各一条），每个版本的日期和音轨号跟着专辑走。结果按和关键词的匹配度排序；想让某个版本排第一，在关键词里加上专辑名或年份，例如「Mojito 周杰伦 最伟大的作品」或「Mojito 周杰伦 2022」。不加时发行最早的版本在前。\n\n**封面**：手动搜索按下面的「封面尺寸」给图（500 / 800 / 1200 / 原图）。\n\n**批量匹配封面**：按本地文件已有的歌名、歌手、专辑去找，三样都对得上才用。专辑名不一样的版本（单曲、精选集、豪华版）一律不用，不会因为别的专辑封面像素更高就拿来。专辑名比较时不分大小写和全角半角，忽略空格和标点。\n\nQQ 音乐、网易云、酷狗三个平台都查：有这张专辑的平台各量出原图的真实像素，用最大的那张（比如《起风了》QQ 1500、网易云 3000、酷狗 1920，用网易云的）；哪个平台没有这张专辑就用其余平台的；三个平台都没有就不写封面，这首歌在 Lyrico 里显示为跳过。本地文件没有专辑名时，以先查的那个平台排在最前面的版本为准，其余平台要是同一张专辑才参与比较。网易云的 PNG 原图会换成同样像素的 JPEG。\n\n三个插件批量匹配封面的结果基本一样（只在像素相同时各自优先用本平台的图），封面源只启用其中一个就够了，都开只是白白多发请求。\n\n**批量匹配**：Lyrico 的「批量匹配元数据」不会写歌词，这是应用本身的设计，插件改不了；歌词请用「批量匹配歌词」。两个任务共用同一份搜索缓存，先跑元数据再跑歌词时，歌词任务里相同关键词的搜索直接读缓存，每首歌少搜一次。\n\n**批量匹配并发**：建议设为 1 或 2，不要大于 2。并发越高，同一时间发往平台的请求越多，越容易被限流（QQ 音乐尤其明显）。\n\n**防限流**：搜索结果缓存 6 小时，详情和歌词缓存 7 天；某个接口被限流时自动换备用接口，并让它暂停 2 分钟。不需要登录。"
+    },
+    {
+      "key": "details",
+      "title": "补全详情",
+      "summary": "查询作词、作曲、专辑艺术家、流派、语种和唱片公司。批量匹配并发建议不大于 2",
+      "group": "元数据",
+      "type": "switch",
+      "defaultValue": "true"
+    },
+    {
+      "key": "replaygain",
+      "title": "回放增益",
+      "summary": "返回 QQ 音乐提供的音轨增益和峰值",
+      "group": "元数据",
+      "type": "switch",
+      "defaultValue": "true"
+    },
+    {
+      "key": "lyric_word_level",
+      "title": "逐字歌词",
+      "summary": "优先用逐字歌词（QRC）。关闭后只输出逐行歌词",
+      "group": "歌词",
+      "type": "switch",
+      "defaultValue": "true"
+    },
+    {
+      "key": "lyric_translation",
+      "title": "翻译",
+      "summary": "歌词带上翻译",
+      "group": "歌词",
+      "type": "switch",
+      "defaultValue": "true"
+    },
+    {
+      "key": "lyric_romanization",
+      "title": "罗马音",
+      "summary": "歌词带上罗马音（日语、韩语、粤语等歌曲才有）",
+      "group": "歌词",
+      "type": "switch",
+      "defaultValue": "true"
+    },
+    {
+      "key": "cover_size",
+      "title": "封面尺寸",
+      "group": "封面",
+      "type": "dropdown",
+      "required": true,
+      "defaultValue": "1200",
+      "options": [
+        {
+          "value": "500",
+          "label": "500 × 500"
+        },
+        {
+          "value": "800",
+          "label": "800 × 800"
+        },
+        {
+          "value": "1200",
+          "label": "1200 × 1200"
+        },
+        {
+          "value": "original",
+          "label": "原图"
+        }
+      ],
+      "summary": "手动搜索时封面给多大。批量匹配封面不看这个设置，一律用原图"
+    },
+    {
+      "key": "cover_cross_platform",
+      "title": "批量匹配封面时比较三个平台",
+      "summary": "QQ、网易云、酷狗里有这张专辑的，用原图像素最高的那张；QQ 没有这首歌或这张专辑时用另外两个平台的。关闭后只在 QQ 里找",
+      "group": "封面",
+      "type": "switch",
+      "defaultValue": "true"
+    },
+    {
+      "key": "cover_min_pixels",
+      "title": "批量匹配封面的最低像素",
+      "summary": "找到的封面真实像素低于这个值时不写封面",
+      "group": "封面",
+      "type": "dropdown",
+      "required": true,
+      "defaultValue": "0",
+      "options": [
+        {
+          "value": "0",
+          "label": "不限制"
+        },
+        {
+          "value": "800",
+          "label": "800"
+        },
+        {
+          "value": "1000",
+          "label": "1000"
+        },
+        {
+          "value": "1200",
+          "label": "1200"
+        },
+        {
+          "value": "1400",
+          "label": "1400"
+        },
+        {
+          "value": "1900",
+          "label": "1900"
+        }
+      ]
+    }
+  ]
+}
