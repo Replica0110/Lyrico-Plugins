@@ -70,14 +70,46 @@ function mapSong(item, request) {
   };
 }
 
+// Lite / Desktop 两种 musicu 响应结构不同，统一抽出歌曲列表
+function extractMusicuSongs(response) {
+  const body = (((response || {}).req_0 || {}).data || {}).body || {};
+  if (Array.isArray(body.item_song)) return body.item_song;
+  const list = (body.song || {}).list;
+  return Array.isArray(list) ? list : [];
+}
+
+// 网页搜索字段名不同（songid/songname/...），归一成 mapSong 认识的结构
+function normalizeWebSong(item) {
+  const pubtime = Number(item.pubtime || 0);
+  let date = "";
+  if (isFinite(pubtime) && pubtime > 0) {
+    // pubtime 是东八区零点的秒级时间戳，固定按东八区取日期，避免受设备时区影响
+    const d = new Date((pubtime + 8 * 3600) * 1000);
+    const month = String(d.getUTCMonth() + 1);
+    const day = String(d.getUTCDate());
+    date = d.getUTCFullYear() + "-" +
+      (month.length < 2 ? "0" + month : month) + "-" +
+      (day.length < 2 ? "0" + day : day);
+  }
+  return {
+    id: item.songid,
+    title: item.songname,
+    singer: item.singer,
+    album: { name: item.albumname, mid: item.albummid },
+    interval: item.interval,
+    time_public: date
+  };
+}
+
 function searchSongs(request) {
   const page = Number(request.page || 1);
   const pageSize = Number(request.pageSize || 20);
+  const query = String(request.keyword || "");
 
-  const response = postMusicu("music.search.SearchCgiService", "DoSearchForQQMusicLite", {
+  const liteParam = {
     search_id: randomSearchId(),
     remoteplace: "search.android.keyboard",
-    query: String(request.keyword || ""),
+    query: query,
     search_type: 0,
     num_per_page: pageSize,
     page_num: page,
@@ -85,10 +117,49 @@ function searchSongs(request) {
     nqc_flag: 0,
     page_id: 1,
     grp: 1
-  });
+  };
+  const desktopParam = {
+    grp: 1,
+    num_per_page: pageSize,
+    page_num: page,
+    query: query,
+    search_type: 0
+  };
 
-  const songs = (((response.req_0 || {}).data || {}).body || {}).item_song || [];
-  return songs.map(item => mapSong(item, request)).filter(song => song.id && song.title);
+  // 顺序回退：Lite（u.y，大陆主路径）→ Desktop（shu6）→ 网页搜索
+  const attempts = [
+    ["lite", function() {
+      return extractMusicuSongs(postMusicu("music.search.SearchCgiService", "DoSearchForQQMusicLite", liteParam));
+    }],
+    ["desktop", function() {
+      return extractMusicuSongs(postMusicuDesktop("music.search.SearchCgiService", "DoSearchForQQMusicDesktop", desktopParam));
+    }],
+    ["web", function() {
+      const response = getWebSearch(query, page, pageSize);
+      const list = (((response || {}).data || {}).song || {}).list;
+      return Array.isArray(list) ? list.map(normalizeWebSong) : [];
+    }]
+  ];
+
+  let networkOk = false;
+  let lastError = null;
+
+  for (let i = 0; i < attempts.length; i++) {
+    const name = attempts[i][0];
+    try {
+      const songs = attempts[i][1]().map(item => mapSong(item, request)).filter(song => song.id && song.title);
+      networkOk = true;
+      if (songs.length) return songs;
+      Platform.log.debug("QQ", name + " search returned no songs");
+    } catch (e) {
+      lastError = e;
+      Platform.log.debug("QQ", name + " search failed: " + String(e && e.message ? e.message : e));
+    }
+  }
+
+  // 全部请求都抛错（断网等真实故障）时不吞掉错误
+  if (!networkOk && lastError) throw lastError;
+  return [];
 }
 
 function searchCovers(request) {
