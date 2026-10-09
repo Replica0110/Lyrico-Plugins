@@ -1,5 +1,7 @@
 {
   "plugin.name": "酷狗音樂",
   "plugin.description": "酷狗搜尋來源外掛\n貢獻者：qingyueyin, BambooPanda92",
-  "error.lyricsCandidate": "歌曲 %1$s 的歌詞候選取得失敗：%2$s"
+  "error.lyricsCandidate": "歌曲 %1$s 的歌詞候選取得失敗：%2$s",
+  "config.metadata_details.title": "補全中繼資料",
+  "config.metadata_details.summary": "補全詞曲作者、專輯藝術家等資訊"
 }

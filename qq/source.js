@@ -66,7 +66,8 @@ function mapSong(item, request) {
     date: fields.date,
     trackNumber: fields.track_number,
     picUrl: fields.cover_url,
-    fields: fields
+    fields: fields,
+    internal: { songMid: String(item.mid || ""), albumMid: String(album.mid || "") }
   };
 }
 
@@ -113,6 +114,7 @@ function normalizeWebSong(item) {
   }
   return {
     id: item.songid,
+    mid: item.songmid,
     title: item.songname,
     singer: item.singer,
     album: { name: item.albumname, mid: item.albummid },
@@ -122,6 +124,7 @@ function normalizeWebSong(item) {
 }
 
 function searchSongs(request) {
+  const startedAt = Date.now();
   const page = Number(request.page || 1);
   const pageSize = Number(request.pageSize || 20);
   const query = String(request.keyword || "");
@@ -169,7 +172,7 @@ function searchSongs(request) {
     try {
       const songs = expandSongVersions(attempts[i][1](), request, name === "web" ? normalizeWebSong : null);
       networkOk = true;
-      if (songs.length) return songs;
+      if (songs.length) return enrichMetadata(songs, request, startedAt);
       Platform.log.debug("QQ", name + " search returned no songs");
     } catch (e) {
       lastError = e;
@@ -188,7 +191,8 @@ function searchCovers(request) {
     page: request.page || 1,
     pageSize: request.pageSize || 5,
     separator: "/",
-    config: request.config || {}
+    config: request.config || {},
+    metadata: false
   }).filter(song => song.picUrl && song.title && song.artist && song.album && song.date);
 }
 
@@ -597,6 +601,7 @@ function getLyrics(request) {
         page: request.page || 1,
         pageSize: request.pageSize || 5,
         separator: "/",
+        metadata: false,
         config: request.config || {}
       });
 

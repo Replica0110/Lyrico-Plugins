@@ -5,5 +5,7 @@
   "config.cover_size.summary": "QQ Music artwork dimensions",
   "config.replaygain.title": "ReplayGain",
   "config.replaygain.summary": "Fetch ReplayGain information while searching songs",
-  "error.lyricsCandidate": "Lyrics candidate %1$s failed: %2$s"
+  "error.lyricsCandidate": "Lyrics candidate %1$s failed: %2$s",
+  "config.metadata_details.title": "Metadata enrichment",
+  "config.metadata_details.summary": "Fetch album artists, genres and languages"
 }

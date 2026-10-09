@@ -6,7 +6,7 @@ function mapSong(item, separator) {
   const date = String(item.PublishDate || "");
   const coverUrl = normalizeImage(item.Image);
   const hash = String(item.FileHash || "");
-  return {
+  const song = {
     id: String(item.ID || ""),
     title: title,
     artist: artist,
@@ -23,9 +23,13 @@ function mapSong(item, separator) {
       comment: String(item.Auxiliary || "")
     },
     internal: {
-      hash: hash
+      hash: hash,
+      albumId: String(item.AlbumID || "")
     }
   };
+  const language = Metadata.text((item.trans_param || {}).language);
+  if (language) song.fields.language = language;
+  return song;
 }
 
 // 同名歌曲的其他版本在 Grp（旧格式为 group）中，按平台 ID 保留独立版本。
@@ -49,6 +53,7 @@ function expandSongVersions(items, separator) {
 }
 
 function searchSongs(request) {
+  const startedAt = Date.now();
   const params = signParams({
     keyword: request.keyword || "",
     page: String(request.page || 1),
@@ -58,7 +63,7 @@ function searchSongs(request) {
   const response = getJson(url, { "x-router": "complexsearch.kugou.com" });
   if (Number(response.error_code || 0) !== 0) return [];
   const list = response.data && Array.isArray(response.data.lists) ? response.data.lists : [];
-  return expandSongVersions(list, request.separator || "/");
+  return enrichMetadata(expandSongVersions(list, request.separator || "/"), request, startedAt);
 }
 
 function searchCovers(request) {
@@ -66,7 +71,8 @@ function searchCovers(request) {
     keyword: request.keyword,
     page: request.page || 1,
     pageSize: request.pageSize || 5,
-    separator: "/"
+    separator: "/",
+    metadata: false
   }).filter(song => song.picUrl && song.title && song.artist && song.album && song.date);
 }
 
@@ -119,6 +125,7 @@ function getLyrics(request) {
         page: request.page || 1,
         pageSize: request.pageSize || 5,
         separator: "/",
+        metadata: false,
         config: request.config || {}
       });
 

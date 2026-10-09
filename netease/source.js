@@ -291,8 +291,10 @@ function searchSongsByCloudSearchFallback(request) {
 }
 
 function searchSongs(request) {
+  const startedAt = Date.now();
+  let songs;
   try {
-    return searchSongsByEapi(request);
+    songs = searchSongsByEapi(request);
   } catch (e) {
     Platform.log.warn(
       "NE",
@@ -302,8 +304,9 @@ function searchSongs(request) {
       )
     );
 
-    return searchSongsByCloudSearchFallback(request);
+    songs = searchSongsByCloudSearchFallback(request);
   }
+  return enrichMetadata(songs, request, startedAt);
 }
 
 function searchCovers(request) {
@@ -312,7 +315,8 @@ function searchCovers(request) {
     page: request.page || 1,
     pageSize: request.pageSize || 5,
     separator: "/",
-    config: request.config || {}
+    config: request.config || {},
+    metadata: false
   }).filter(function (song) {
     return song.picUrl && song.title && song.artist && song.album && song.date;
   });
@@ -395,6 +399,7 @@ function getLyrics(request) {
         page: request.page || 1,
         pageSize: request.pageSize || 5,
         separator: "/",
+        metadata: false,
         config: request.config || {}
       });
 
