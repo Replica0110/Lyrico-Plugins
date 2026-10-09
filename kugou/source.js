@@ -28,6 +28,26 @@ function mapSong(item, separator) {
   };
 }
 
+// 同名歌曲的其他版本在 Grp（旧格式为 group）中，按平台 ID 保留独立版本。
+function expandSongVersions(items, separator) {
+  const pending = items.slice().reverse();
+  const visited = new Set();
+  const seenIds = new Set();
+  const songs = [];
+  while (pending.length) {
+    const item = pending.pop();
+    if (!item || typeof item !== "object" || visited.has(item)) continue;
+    visited.add(item);
+    const group = Array.isArray(item.Grp) ? item.Grp : (Array.isArray(item.group) ? item.group : []);
+    for (let i = group.length - 1; i >= 0; i--) pending.push(group[i]);
+    const song = mapSong(item, separator);
+    if (!song.id || !song.title || seenIds.has(song.id)) continue;
+    seenIds.add(song.id);
+    songs.push(song);
+  }
+  return songs;
+}
+
 function searchSongs(request) {
   const params = signParams({
     keyword: request.keyword || "",
@@ -38,7 +58,7 @@ function searchSongs(request) {
   const response = getJson(url, { "x-router": "complexsearch.kugou.com" });
   if (Number(response.error_code || 0) !== 0) return [];
   const list = response.data && Array.isArray(response.data.lists) ? response.data.lists : [];
-  return list.map(item => mapSong(item, request.separator || "/"));
+  return expandSongVersions(list, request.separator || "/");
 }
 
 function searchCovers(request) {

@@ -43,7 +43,7 @@ function postMusicuDesktop(module, method, param) {
 
 // 网页版搜索接口；不带 Referer 时会静默返回空结果
 function getWebSearch(query, page, pageSize) {
-  const url = QQ_WEB_SEARCH_URL + "?format=json&w=" + encodeURIComponent(String(query || "")) +
+  const url = QQ_WEB_SEARCH_URL + "?format=json&aggr=1&w=" + encodeURIComponent(String(query || "")) +
     "&n=" + Number(pageSize || 20) + "&p=" + Number(page || 1);
   const text = Platform.http.getText(url, {
     headers: {

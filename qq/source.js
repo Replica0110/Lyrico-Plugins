@@ -78,6 +78,26 @@ function extractMusicuSongs(response) {
   return Array.isArray(list) ? list : [];
 }
 
+// 搜索接口把其他版本放在 grp 中；沿用本次响应，不为每个版本追加查询。
+function expandSongVersions(items, request, normalize) {
+  const pending = items.slice().reverse();
+  const visited = new Set();
+  const seenIds = new Set();
+  const songs = [];
+  while (pending.length) {
+    const item = pending.pop();
+    if (!item || typeof item !== "object" || visited.has(item)) continue;
+    visited.add(item);
+    const group = Array.isArray(item.grp) ? item.grp : [];
+    for (let i = group.length - 1; i >= 0; i--) pending.push(group[i]);
+    const song = mapSong(normalize ? normalize(item) : item, request);
+    if (!song.id || !song.title || seenIds.has(song.id)) continue;
+    seenIds.add(song.id);
+    songs.push(song);
+  }
+  return songs;
+}
+
 // 网页搜索字段名不同（songid/songname/...），归一成 mapSong 认识的结构
 function normalizeWebSong(item) {
   const pubtime = Number(item.pubtime || 0);
@@ -137,7 +157,7 @@ function searchSongs(request) {
     ["web", function() {
       const response = getWebSearch(query, page, pageSize);
       const list = (((response || {}).data || {}).song || {}).list;
-      return Array.isArray(list) ? list.map(normalizeWebSong) : [];
+      return Array.isArray(list) ? list : [];
     }]
   ];
 
@@ -147,7 +167,7 @@ function searchSongs(request) {
   for (let i = 0; i < attempts.length; i++) {
     const name = attempts[i][0];
     try {
-      const songs = attempts[i][1]().map(item => mapSong(item, request)).filter(song => song.id && song.title);
+      const songs = expandSongVersions(attempts[i][1](), request, name === "web" ? normalizeWebSong : null);
       networkOk = true;
       if (songs.length) return songs;
       Platform.log.debug("QQ", name + " search returned no songs");
