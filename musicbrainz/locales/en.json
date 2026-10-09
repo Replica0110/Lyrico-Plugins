@@ -1,5 +1,5 @@
 {
-  "plugin.description": "MusicBrainz metadata source: song search, album artwork, composers and genres (no lyrics support)",
+  "plugin.description": "MusicBrainz metadata source: song search, album artwork, composers and genres (no lyrics support)\nContributors: Replica0110",
   "config.enrich.title": "Full metadata",
   "group.search": "Search",
   "config.enrich.summary": "Enriches composers and genres while searching. MusicBrainz rate limits (about 1 request/second) confine each search to the first few results; repeated searches fill in the rest from cache",

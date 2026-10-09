@@ -1,5 +1,5 @@
 {
-  "plugin.description": "MusicBrainz 元数据源：歌曲搜索、专辑封面、词曲作者、流派（无歌词能力）",
+  "plugin.description": "MusicBrainz 元数据源：歌曲搜索、专辑封面、词曲作者、流派（无歌词能力）\n贡献者：Replica0110",
   "config.enrich.title": "完整元数据",
   "group.search": "搜索",
   "config.enrich.summary": "搜索时补全词曲作者与流派。受 MusicBrainz 限流（约 1 请求/秒）影响，每次仅补全前几首，重复搜索命中缓存后逐步补全",

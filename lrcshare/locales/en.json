@@ -1,5 +1,5 @@
 {
-  "plugin.description": "LrcShare lyrics site source: lyrics, album artwork and metadata through anonymous access without API keys; multilingual lyrics (original/translation/romanization) returned as structured data",
+  "plugin.description": "LrcShare lyrics site source: lyrics, album artwork and metadata through anonymous access without API keys; multilingual lyrics (original/translation/romanization) returned as structured data\nContributors: Replica0110",
   "config.enrich.title": "Full metadata",
   "group.search": "Search",
   "config.enrich.summary": "Fetch lyricists, track numbers, comments and lyrics for every result while searching, for complete tagging; turn it off to return summaries only and search faster",

@@ -1,5 +1,5 @@
 {
-  "plugin.description": "MusicBrainz 中繼資料來源：歌曲搜尋、專輯封面、詞曲作者、曲風（無歌詞能力）",
+  "plugin.description": "MusicBrainz 中繼資料來源：歌曲搜尋、專輯封面、詞曲作者、曲風（無歌詞能力）\n貢獻者：Replica0110",
   "config.enrich.title": "完整中繼資料",
   "group.search": "搜尋",
   "config.enrich.summary": "搜尋時補全詞曲作者與曲風。受 MusicBrainz 限流（約 1 請求/秒）影響，每次僅補全前幾首，重複搜尋命中快取後逐步補全",

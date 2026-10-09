@@ -1,6 +1,6 @@
 {
   "plugin.name": "QQ Music",
-  "plugin.description": "QQ Music search source plugin",
+  "plugin.description": "QQ Music search source plugin\nContributors: qingyueyin, BambooPanda92",
   "config.cover_size.title": "Artwork size",
   "config.cover_size.summary": "QQ Music artwork dimensions",
   "config.replaygain.title": "ReplayGain",

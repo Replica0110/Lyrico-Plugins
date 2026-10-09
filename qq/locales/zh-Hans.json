@@ -1,6 +1,6 @@
 {
   "plugin.name": "QQ音乐",
-  "plugin.description": "QQ音乐搜索源插件",
+  "plugin.description": "QQ音乐搜索源插件\n贡献者：qingyueyin, BambooPanda92",
   "config.cover_size.title": "封面大小",
   "config.cover_size.summary": "QQ 音乐封面图片尺寸",
   "config.replaygain.title": "回放增益",
