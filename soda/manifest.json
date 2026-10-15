@@ -1,8 +1,8 @@
 {
   "id": "com.sodamusic.source",
   "name": "@plugin.name",
-  "versionCode": 9,
-  "versionName": "0.5.1",
+  "versionCode": 10,
+  "versionName": "0.5.2",
   "author": "Replica0110",
   "description": "@plugin.description",
   "apiVersion": 5,
@@ -25,38 +25,8 @@
       "defaultValue": "@config.auth_notice.content"
     },
     {
-      "key": "device_id",
-      "title": "@config.device_id.title",
-      "summary": "@config.device_id.summary",
-      "group": "@group.request",
-      "type": "text",
-      "defaultValue": "3753066532709850"
-    },
-    {
-      "key": "iid",
-      "title": "@config.iid.title",
-      "summary": "@config.iid.summary",
-      "group": "@group.request",
-      "type": "text",
-      "defaultValue": "3753066532713946"
-    },
-    {
       "key": "cookies",
       "title": "@config.cookies.title",
-      "group": "@group.auth",
-      "type": "password",
-      "defaultValue": ""
-    },
-    {
-      "key": "x_helios",
-      "title": "@config.x_helios.title",
-      "group": "@group.auth",
-      "type": "password",
-      "defaultValue": ""
-    },
-    {
-      "key": "x_medusa",
-      "title": "@config.x_medusa.title",
       "group": "@group.auth",
       "type": "password",
       "defaultValue": ""
