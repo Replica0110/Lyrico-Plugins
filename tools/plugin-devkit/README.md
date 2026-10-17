@@ -1,5 +1,7 @@
 # Lyrico Plugin Devkit
 
+当前校验范围为插件协议 API1–5、Host API1–4。API5 对应歌词载荷扩展（逐词音译、TTML 元数据与 Ruby）；国际化属于 Host API4。
+
 桌面端插件调试验证工具，用于在开发机上验证 Lyrico 搜索源插件。
 
 ## 使用方式
@@ -46,7 +48,7 @@ lyrico-plugin validate ./my-plugin
 - 运行结果中的 `fields` 是否只使用宿主标准字段
 - `internal` 是否满足数量和大小限制
 
-API 版本按向下兼容规则校验：当前插件协议版本 4 接受 `apiVersion` 1、2、3、4；`Platform` 宿主 API 版本为 3，插件的 `minHostApiVersion` 不得高于 3。
+API 版本按向下兼容规则校验：当前插件协议版本 5 接受 `apiVersion` 1、2、3、4、5；`Platform` 宿主 API 版本为 4，插件的 `minHostApiVersion` 不得高于 4。
 
 `configFields` 支持 `text`、`password`、`number`、`switch`、`dropdown`、`textarea` 和只展示说明、不写入运行时配置的 `markdown` 类型。
 
@@ -110,6 +112,14 @@ lyrico-plugin test ./my-plugin searchSongs --keyword "晴天" --config ./config.
 
 应分别测试插件声明的每一个能力。`searchSongs` 成功只能证明歌曲接口可用，不能证明
 `getLyrics` 的歌词请求、解密和返回结构也能工作。
+
+Devkit 会按 Android 宿主的规则解析 structured 歌词。`original` 和 `romanization` 可使用
+逐词行；行的第 4 项可携带 `ttm:agent`、`itunes:song-part`、`divBegin`、`divEnd` 等
+扩展属性。`agents`、`metadata`、`timing`、`language`、`translatedLang` 和
+`romanizationLang` 也会进入解析结果。字段说明和示例见
+[插件函数文档](../../../docs/plugins/plugin-functions.md)。
+
+修改 Devkit 后可运行 `npm run test:unit` 执行单元测试。
 
 ### pack
 

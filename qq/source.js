@@ -37,6 +37,13 @@ function mapSong(item, request) {
   const subtitle = item.subtitle || item.desc || "";
   if (subtitle) fields.comment = String(subtitle);
 
+  // QQ uses a zero-based disc index; tags use one-based disc numbers.
+  const discIndex = item.index_cd;
+  if (typeof discIndex === "number" && Number.isSafeInteger(discIndex) &&
+      discIndex >= 0 && discIndex < Number.MAX_SAFE_INTEGER) {
+    fields.disc_number = String(discIndex + 1);
+  }
+
   if (item.volume) {
     const cfg = request.config || {};
     const rgOff = cfg.replaygain === false || cfg.replaygain === "false";
@@ -59,18 +66,73 @@ function mapSong(item, request) {
     date: fields.date,
     trackNumber: fields.track_number,
     picUrl: fields.cover_url,
-    fields: fields
+    fields: fields,
+    internal: { songMid: String(item.mid || ""), albumMid: String(album.mid || "") }
+  };
+}
+
+// Lite / Desktop 两种 musicu 响应结构不同，统一抽出歌曲列表
+function extractMusicuSongs(response) {
+  const body = (((response || {}).req_0 || {}).data || {}).body || {};
+  if (Array.isArray(body.item_song)) return body.item_song;
+  const list = (body.song || {}).list;
+  return Array.isArray(list) ? list : [];
+}
+
+// 搜索接口把其他版本放在 grp 中；沿用本次响应，不为每个版本追加查询。
+function expandSongVersions(items, request, normalize) {
+  const pending = items.slice().reverse();
+  const visited = new Set();
+  const seenIds = new Set();
+  const songs = [];
+  while (pending.length) {
+    const item = pending.pop();
+    if (!item || typeof item !== "object" || visited.has(item)) continue;
+    visited.add(item);
+    const group = Array.isArray(item.grp) ? item.grp : [];
+    for (let i = group.length - 1; i >= 0; i--) pending.push(group[i]);
+    const song = mapSong(normalize ? normalize(item) : item, request);
+    if (!song.id || !song.title || seenIds.has(song.id)) continue;
+    seenIds.add(song.id);
+    songs.push(song);
+  }
+  return songs;
+}
+
+// 网页搜索字段名不同（songid/songname/...），归一成 mapSong 认识的结构
+function normalizeWebSong(item) {
+  const pubtime = Number(item.pubtime || 0);
+  let date = "";
+  if (isFinite(pubtime) && pubtime > 0) {
+    // pubtime 是东八区零点的秒级时间戳，固定按东八区取日期，避免受设备时区影响
+    const d = new Date((pubtime + 8 * 3600) * 1000);
+    const month = String(d.getUTCMonth() + 1);
+    const day = String(d.getUTCDate());
+    date = d.getUTCFullYear() + "-" +
+      (month.length < 2 ? "0" + month : month) + "-" +
+      (day.length < 2 ? "0" + day : day);
+  }
+  return {
+    id: item.songid,
+    mid: item.songmid,
+    title: item.songname,
+    singer: item.singer,
+    album: { name: item.albumname, mid: item.albummid },
+    interval: item.interval,
+    time_public: date
   };
 }
 
 function searchSongs(request) {
+  const startedAt = Date.now();
   const page = Number(request.page || 1);
   const pageSize = Number(request.pageSize || 20);
+  const query = String(request.keyword || "");
 
-  const response = postMusicu("music.search.SearchCgiService", "DoSearchForQQMusicLite", {
+  const liteParam = {
     search_id: randomSearchId(),
     remoteplace: "search.android.keyboard",
-    query: String(request.keyword || ""),
+    query: query,
     search_type: 0,
     num_per_page: pageSize,
     page_num: page,
@@ -78,10 +140,49 @@ function searchSongs(request) {
     nqc_flag: 0,
     page_id: 1,
     grp: 1
-  });
+  };
+  const desktopParam = {
+    grp: 1,
+    num_per_page: pageSize,
+    page_num: page,
+    query: query,
+    search_type: 0
+  };
 
-  const songs = (((response.req_0 || {}).data || {}).body || {}).item_song || [];
-  return songs.map(item => mapSong(item, request)).filter(song => song.id && song.title);
+  // 顺序回退：Lite（u.y，大陆主路径）→ Desktop（shu6）→ 网页搜索
+  const attempts = [
+    ["lite", function() {
+      return extractMusicuSongs(postMusicu("music.search.SearchCgiService", "DoSearchForQQMusicLite", liteParam));
+    }],
+    ["desktop", function() {
+      return extractMusicuSongs(postMusicuDesktop("music.search.SearchCgiService", "DoSearchForQQMusicDesktop", desktopParam));
+    }],
+    ["web", function() {
+      const response = getWebSearch(query, page, pageSize);
+      const list = (((response || {}).data || {}).song || {}).list;
+      return Array.isArray(list) ? list : [];
+    }]
+  ];
+
+  let networkOk = false;
+  let lastError = null;
+
+  for (let i = 0; i < attempts.length; i++) {
+    const name = attempts[i][0];
+    try {
+      const songs = expandSongVersions(attempts[i][1](), request, name === "web" ? normalizeWebSong : null);
+      networkOk = true;
+      if (songs.length) return enrichMetadata(songs, request, startedAt);
+      Platform.log.debug("QQ", name + " search returned no songs");
+    } catch (e) {
+      lastError = e;
+      Platform.log.debug("QQ", name + " search failed: " + String(e && e.message ? e.message : e));
+    }
+  }
+
+  // 全部请求都抛错（断网等真实故障）时不吞掉错误
+  if (!networkOk && lastError) throw lastError;
+  return [];
 }
 
 function searchCovers(request) {
@@ -90,7 +191,8 @@ function searchCovers(request) {
     page: request.page || 1,
     pageSize: request.pageSize || 5,
     separator: "/",
-    config: request.config || {}
+    config: request.config || {},
+    metadata: false
   }).filter(song => song.picUrl && song.title && song.artist && song.album && song.date);
 }
 
@@ -283,21 +385,23 @@ function parseQrcFormat(text) {
     while ((wordMatch = wordRe.exec(lineContent)) !== null) {
       const wordText = wordMatch[1] || "";
       const wordStart = Number(wordMatch[2] || 0);
+      const duration = Number(wordMatch[3] || 0);
 
       // 这里不要过滤空文本。
       // QQ 罗马音里可能存在 "(299,37)" 这种只有时间片、没有文本的 word。
       // master 的 QrcParser 会保留空 LyricsWord，后续 merge 后表现为空文本，而不是把时间片当正文。
-      wordList.push([wordStart, wordText]);
+      wordList.push([wordStart, duration, wordText]);
     }
 
     const words = [];
 
     wordList.forEach((item, index) => {
       const wordStart = item[0];
-      const wordText = item[1];
-      const wordEnd = index < wordList.length - 1
-        ? wordList[index + 1][0]
-        : lineEnd;
+      const duration = Number(item[1] || 0);
+      const wordText = item[2];
+      const wordEnd = duration > 0
+        ? wordStart + duration
+        : (index < wordList.length - 1 ? wordList[index + 1][0] : lineEnd);
 
       words.push([wordStart, wordEnd, wordText]);
     });
@@ -497,6 +601,7 @@ function getLyrics(request) {
         page: request.page || 1,
         pageSize: request.pageSize || 5,
         separator: "/",
+        metadata: false,
         config: request.config || {}
       });
 
@@ -512,7 +617,7 @@ function getLyrics(request) {
       lyrics.tags.date = year;
       return lyrics;
     } catch (e) {
-      Platform.log.warn("QQ", "Lyrics candidate failed: " + String(e && e.message ? e.message : e));
+      Platform.log.warn("QQ", Platform.i18n.t("error.lyricsCandidate", String(song.title || song.id || ""), String(e && e.message ? e.message : e)));
       return null;
     }
   }).filter(Boolean);

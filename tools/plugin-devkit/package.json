@@ -12,6 +12,7 @@
     "validate": "node ./src/cli.js validate",
     "inspect": "node ./src/cli.js inspect",
     "test": "node ./src/cli.js test",
+    "test:unit": "node --test",
     "pack": "node ./src/cli.js pack"
   },
   "engines": {

@@ -133,7 +133,7 @@ function enrichSong(song, config, separator) {
       song.internal.lyric_lines = detail.lyric_lines;
     }
   } catch (e) {
-    Platform.log.warn("LrcShare", "enrich failed for " + trackId + ": " + (e && e.message ? e.message : e));
+    Platform.log.warn("LrcShare", Platform.i18n.t("warn.enrichFailed", String(trackId), String(e && e.message ? e.message : e)));
   }
 }
 
@@ -212,7 +212,7 @@ function searchSongs(request) {
 
     return songs;
   } catch (e) {
-    Platform.log.error("LrcShare", "searchSongs failed: " + (e && e.message ? e.message : e));
+    Platform.log.error("LrcShare", Platform.i18n.t("error.searchSongsFailed", String(e && e.message ? e.message : e)));
     return [];
   }
 }
@@ -222,16 +222,13 @@ function stripWordTags(text) {
   return String(text || "").replace(/<\d{1,6}(?::\d{1,6})?>/g, "");
 }
 
-/** text（含 <偏移毫秒[:词长毫秒]> 词标签）→ Lyrico 逐词 [[wordStart, wordEnd, "word"], ...]。
- *  双值标签词长 = 演唱时长：词 end = 起始 + 词长（精确还原每个字的结束时间，导出逐毫秒保真）；
- *  旧格式 <偏移> 无词长：end = 下一词起始（间隙覆盖推导），末词兜底行结束，行为与原先一致 */
+/** 把 <偏移[:时长]> 词标签转换为 Lyrico 逐词行。 */
 function wordsOf(text, lineStart, lineEnd) {
   var tokens = String(text).split(/<(\d{1,6})(?::(\d{1,6}))?>/);
   var starts = [];
   var offset = 0;
   var duration = 0;
-  // split 带捕获组分隔：i%3===0 文本位（前置标签在其前 2 位）、i%3===1 偏移、i%3===2 词长，
-  // 标签作用于其后的下一个文本（首文本无前置标签 = 偏移 0）
+  // split 结果按“文本、偏移、时长”循环；标签描述它后面的文本。
   for (var i = 0; i < tokens.length; i++) {
     if (i % 3 === 0) {
       if (tokens[i]) starts.push({ text: tokens[i], start: lineStart + offset, dur: duration });
@@ -259,41 +256,51 @@ function plainToLines(rows) {
   var lines = [];
   for (var i = 0; i < timed.length; i++) {
     var start = timed[i].time_ms;
-    var end = (i + 1 < timed.length) ? timed[i + 1].time_ms : start + 3000;
-    lines.push([start, end, stripWordTags(timed[i].text)]);
+    var texts = [];
+    var explicitEnd = null;
+    while (i < timed.length && timed[i].time_ms === start) {
+      var text = stripWordTags(timed[i].text);
+      if (text && texts.indexOf(text) === -1) texts.push(text);
+      if (timed[i].end_ms != null && timed[i].end_ms > start) explicitEnd = timed[i].end_ms;
+      i++;
+    }
+    var end = explicitEnd != null
+      ? explicitEnd
+      : (i < timed.length ? timed[i].time_ms : start + 3000);
+    i--;
+    if (texts.length) lines.push([start, end, texts.join("\n")]);
   }
   return lines;
 }
 
-/** 行表 rows → Lyrico original Line[]（含词标签则逐词，否则整行）；
- *  行级扩展（TTML 源拆行携带的 attrs 全量属性 / agent / song_part / div 时间窗）
- *  → 宿主 structured 扩展协议 Line 第 4 元素 */
+/** 把原文行转换为 Lyrico 行，并在第 4 项保留 TTML 行属性。 */
 function originalToLines(rows) {
   var timed = (rows || []).filter(function (r) { return r.time_ms != null; })
     .sort(function (a, b) { return a.time_ms - b.time_ms; });
   var lines = [];
   for (var i = 0; i < timed.length; i++) {
     var start = timed[i].time_ms;
-    var end = (i + 1 < timed.length) ? timed[i + 1].time_ms : start + 3000;
+    var end = timed[i].end_ms != null && timed[i].end_ms > start
+      ? timed[i].end_ms
+      : ((i + 1 < timed.length) ? timed[i + 1].time_ms : start + 3000);
     var text = timed[i].text;
     var body = /<\d{1,6}(?::\d{1,6})?>/.test(text) ? wordsOf(text, start, end) : text;
-    // 行级扩展属性（API lyric_lines 行 attrs/agent/song_part/div 时间窗 → Line 第 4 元素）：
-    // - attrs = <p> 标签上除时间外的全部属性原样透传（ttm:agent / itunes:key / ttm:role / 自定义 key），
-    //   「投稿什么返回什么」，宿主写回 <p> 时原样输出；
-    // - ttm:agent / itunes:songPart = attrs 之外的兜底映射（老 API 无 attrs 时仍生效）；
-    // - divBegin/divEnd = 段首行携带的段落时间窗（宿主重建 <div> 时消费，不输出到 <p>）
+    // TTML 源拆出的行属性由 structured 协议第 4 项传回宿主。
     var ext = null;
     if (timed[i].attrs) {
       for (var k in timed[i].attrs) {
         if (!Object.prototype.hasOwnProperty.call(timed[i].attrs, k)) continue;
+        if (k === "itunes:key") continue;
+        if (typeof timed[i].attrs[k] !== "string" && typeof timed[i].attrs[k] !== "number" && typeof timed[i].attrs[k] !== "boolean") continue;
         ext = ext || {};
-        ext[String(k)] = String(timed[i].attrs[k]);
+        var attrName = k === "itunes:songPart" ? "itunes:song-part" : String(k);
+        ext[attrName] = String(timed[i].attrs[k]);
       }
     }
     if (timed[i].agent && !(ext && ext["ttm:agent"])) { ext = ext || {}; ext["ttm:agent"] = String(timed[i].agent); }
-    if (timed[i].song_part && !(ext && ext["itunes:songPart"])) { ext = ext || {}; ext["itunes:songPart"] = String(timed[i].song_part); }
-    if (timed[i].div_begin != null) { ext = ext || {}; ext.divBegin = timed[i].div_begin; }
-    if (timed[i].div_end != null) { ext = ext || {}; ext.divEnd = timed[i].div_end; }
+    if (timed[i].song_part && !(ext && ext["itunes:song-part"])) { ext = ext || {}; ext["itunes:song-part"] = String(timed[i].song_part); }
+    if (timed[i].div_begin != null) { ext = ext || {}; ext.divBegin = String(timed[i].div_begin); }
+    if (timed[i].div_end != null) { ext = ext || {}; ext.divEnd = String(timed[i].div_end); }
     if (ext) {
       lines.push([start, end, body, ext]);
     } else {
@@ -315,8 +322,7 @@ function buildTags(fields, song) {
 
 /**
  * lyric_lines（versions 数组）→ Lyrico structured 的 original/translated/romanization。
- * Lyrico structured 的 translated/romanization 是「单一」Line[]：多语言译文合并进同一个
- * translated（同时间戳并列显示），保证打开翻译开关能看全所有译文（如东京盆踊 中+日 两行）。
+ * structured 只有一条翻译轨；同一时间的多语言译文合并为一行。
  */
 function buildStructuredFromVersions(lyricLines, fields, song) {
   var versions = lyricLines.versions || [];
@@ -326,7 +332,7 @@ function buildStructuredFromVersions(lyricLines, fields, song) {
   var credits = [];
   for (var i = 0; i < versions.length; i++) {
     var v = versions[i];
-    Platform.log.warn("LrcShare", "version: lang=" + v.lang + " kind=" + v.kind + " rows=" + (v.rows ? v.rows.length : 0));
+    Platform.log.debug("LrcShare", "version: lang=" + v.lang + " kind=" + v.kind + " rows=" + (v.rows ? v.rows.length : 0));
     if (v.kind === "original" && !originalVer) originalVer = v;
     else if (v.kind === "translation") translatedRows = translatedRows.concat(v.rows || []);
     else if (v.kind === "romanization") romanRows = romanRows.concat(v.rows || []);
@@ -355,13 +361,7 @@ function buildStructuredFromVersions(lyricLines, fields, song) {
     translated: translatedLines,
     romanization: romanLines
   };
-  // TTML head 扩展透传（Lyrico structured 扩展协议顶层字段，需新版宿主支持；旧版宿主忽略未知字段不受影响）：
-  // agents = 演唱者列表（写回 TTML head <ttm:agent>，行级 ttm:agent 引用其 id）；
-  // metadata = head 元数据元素树（songwriters/amll:meta，官方 key 按规范写回、非官方原样透传）；
-  // timing = 词级时间标志（写回根 <tt itunes:timing="...">）；
-  // language/translatedLang/romanizationLang = 轨语言码（BCP47 原样输出不折叠，
-  //   如 zh-Hans / zh-Latn-jyutping，写回根 xml:lang 与对应轨元素的 xml:lang）。
-  //   取值优先级：head.language（原文根 xml:lang，最权威）→ 版本 ttml_lang（BCP47 输出码）→ 版本 lang（站内码兜底）
+  // 保留 structured 协议能够表达的 TTML head 和语言信息。
   if (lyricLines.agents && lyricLines.agents.length) {
     out.agents = lyricLines.agents;
   }
@@ -377,18 +377,16 @@ function buildStructuredFromVersions(lyricLines, fields, song) {
   if (originalLang) {
     out.language = originalLang;
   }
-  // 翻译/音译轨语言码：多语言版本合并轨取首个非空（结构化协议是单一语言码字段；
-  // 混合多语言译文合并场景下无法逐行标注，首个版本语言码已覆盖绝大多数场景）
-  var translatedLang = "";
-  var romanizationLang = "";
+  var translatedLangs = [];
+  var romanizationLangs = [];
   for (var wi = 0; wi < versions.length; wi++) {
     var wv = versions[wi];
     var wvLang = wv.ttml_lang || wv.lang || "";
-    if (wv.kind === "translation" && !translatedLang && wvLang) translatedLang = wvLang;
-    if (wv.kind === "romanization" && !romanizationLang && wvLang) romanizationLang = wvLang;
+    if (wv.kind === "translation" && wvLang && translatedLangs.indexOf(wvLang) === -1) translatedLangs.push(wvLang);
+    if (wv.kind === "romanization" && wvLang && romanizationLangs.indexOf(wvLang) === -1) romanizationLangs.push(wvLang);
   }
-  if (translatedLang) out.translatedLang = translatedLang;
-  if (romanizationLang) out.romanizationLang = romanizationLang;
+  if (translatedLangs.length === 1) out.translatedLang = translatedLangs[0];
+  if (romanizationLangs.length === 1) out.romanizationLang = romanizationLangs[0];
   return out;
 }
 
@@ -411,7 +409,7 @@ function getLyricsForSong(request, song) {
   }
   if (lyricLines && lyricLines.versions && lyricLines.versions.length) {
     var structured = buildStructuredFromVersions(lyricLines, fields, song);
-    // rawTtm 双保险：字符级原文直通宿主管线（新版宿主 TtmlParser 保真解析词时间/段落/元数据；
+    // rawTtml 双保险：字符级原文直通宿主管线（新版宿主 TtmlParser 保真解析词时间/段落/元数据；
     // 旧版宿主忽略未知字段不受影响）。拉取失败不阻断 structured 返回
     if (structured && trackId) {
       try {
@@ -440,7 +438,7 @@ function getLyricsForSong(request, song) {
       if (!detail || !detail.lrc) return null;
       lrcText = detail.lrc;
     } catch (e) {
-      Platform.log.warn("LrcShare", "getLyrics failed: " + (e && e.message ? e.message : e));
+      Platform.log.warn("LrcShare", Platform.i18n.t("error.getLyricsFailed", String(e && e.message ? e.message : e)));
       return null;
     }
   }

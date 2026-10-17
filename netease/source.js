@@ -74,7 +74,7 @@ function resolveSongDate(song) {
   } catch (e) {
     Platform.log.warn(
       "NE",
-      "Resolve song date failed: " + String(e && e.message ? e.message : e)
+      Platform.i18n.t("warn.resolveSongDate", String(e && e.message ? e.message : e))
     );
     return "";
   }
@@ -150,7 +150,7 @@ function build163Key(song) {
       Platform.crypto.aesEcbPkcs5EncryptBase64("music:" + json, AES_163_KEY)
     );
   } catch (e) {
-    Platform.log.warn("NE", "build163Key failed: " + String(e && e.message ? e.message : e));
+    Platform.log.warn("NE", Platform.i18n.t("warn.buildCommentKey", String(e && e.message ? e.message : e)));
     return "";
   }
 }
@@ -291,17 +291,22 @@ function searchSongsByCloudSearchFallback(request) {
 }
 
 function searchSongs(request) {
+  const startedAt = Date.now();
+  let songs;
   try {
-    return searchSongsByEapi(request);
+    songs = searchSongsByEapi(request);
   } catch (e) {
     Platform.log.warn(
       "NE",
-      "EAPI search failed, fallback to cloudsearch: " +
+      Platform.i18n.t(
+        "warn.eapiSearchFallback",
         String(e && e.message ? e.message : e)
+      )
     );
 
-    return searchSongsByCloudSearchFallback(request);
+    songs = searchSongsByCloudSearchFallback(request);
   }
+  return enrichMetadata(songs, request, startedAt);
 }
 
 function searchCovers(request) {
@@ -310,7 +315,8 @@ function searchCovers(request) {
     page: request.page || 1,
     pageSize: request.pageSize || 5,
     separator: "/",
-    config: request.config || {}
+    config: request.config || {},
+    metadata: false
   }).filter(function (song) {
     return song.picUrl && song.title && song.artist && song.album && song.date;
   });
@@ -393,6 +399,7 @@ function getLyrics(request) {
         page: request.page || 1,
         pageSize: request.pageSize || 5,
         separator: "/",
+        metadata: false,
         config: request.config || {}
       });
 
@@ -408,7 +415,7 @@ function getLyrics(request) {
       lyrics.tags.date = date;
       return lyrics;
     } catch (e) {
-      Platform.log.warn("NE", "Lyrics candidate failed: " + String(e && e.message ? e.message : e));
+      Platform.log.warn("NE", Platform.i18n.t("error.lyricsCandidate", String(song.title || song.id || ""), String(e && e.message ? e.message : e)));
       return null;
     }
   }).filter(Boolean);

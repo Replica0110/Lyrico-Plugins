@@ -1,8 +1,10 @@
 import vm from 'node:vm';
 import { createHostApi } from './host-api.js';
+import { loadStrings } from './i18n.js';
 
 export async function createRuntime(plugin, options = {}) {
   const host = createHostApi({ echoLogs: options.echoLogs });
+  host.api.i18n = await loadStrings(plugin.root, plugin.manifest, options.locales ?? ['en']);
   const sandbox = {
     console,
     setTimeout,

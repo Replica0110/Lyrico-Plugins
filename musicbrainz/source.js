@@ -138,7 +138,7 @@ function searchSongs(request) {
 
     return songs;
   } catch (e) {
-    Platform.log.error("MusicBrainz", "searchSongs failed: " + (e && e.message ? e.message : e));
+    Platform.log.error("MusicBrainz", Platform.i18n.t("error.searchSongsFailed", String(e && e.message ? e.message : e)));
     return [];
   }
 }
@@ -167,7 +167,7 @@ function searchCovers(request) {
 
     return songs;
   } catch (e) {
-    Platform.log.error("MusicBrainz", "searchCovers failed: " + (e && e.message ? e.message : e));
+    Platform.log.error("MusicBrainz", Platform.i18n.t("error.searchCoversFailed", String(e && e.message ? e.message : e)));
     return [];
   }
 }

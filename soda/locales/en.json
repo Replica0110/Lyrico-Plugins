@@ -1,0 +1,12 @@
+{
+  "plugin.name": "Soda Music",
+  "plugin.description": "Soda Music search source plugin",
+  "config.auth_notice.title": "Search and lyrics",
+  "group.request": "Requests",
+  "config.auth_notice.content": "Uses Android search and public lyrics endpoints. No PC signatures required; Cookie is optional.",
+  "config.cookies.title": "Cookie",
+  "group.auth": "Authentication",
+  "warn.shareLyricsFallback": "Share-page lyrics failed: %1$s",
+  "error.lyricsCandidate": "Lyrics candidate %1$s failed: %2$s",
+  "warn.seoLyricsFallback": "SEO lyrics failed; trying share page: %1$s"
+}

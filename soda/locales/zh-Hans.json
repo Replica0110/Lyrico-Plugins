@@ -1,0 +1,12 @@
+{
+  "plugin.name": "汽水音乐",
+  "plugin.description": "汽水音乐搜索源插件",
+  "config.auth_notice.title": "搜索与歌词",
+  "group.request": "请求",
+  "config.auth_notice.content": "使用 Android 搜索接口和公开歌词接口，无需 PC 客户端签名；Cookie 可选",
+  "config.cookies.title": "Cookie",
+  "group.auth": "认证",
+  "warn.shareLyricsFallback": "分享页歌词获取失败：%1$s",
+  "error.lyricsCandidate": "歌曲 %1$s 的歌词候选获取失败：%2$s",
+  "warn.seoLyricsFallback": "SEO 歌词获取失败，尝试分享页：%1$s"
+}

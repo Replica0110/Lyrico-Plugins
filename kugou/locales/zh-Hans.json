@@ -1,0 +1,7 @@
+{
+  "plugin.name": "酷狗音乐",
+  "plugin.description": "酷狗搜索源插件\n贡献者：qingyueyin, BambooPanda92",
+  "error.lyricsCandidate": "歌曲 %1$s 的歌词候选获取失败：%2$s",
+  "config.metadata_details.title": "补全元数据",
+  "config.metadata_details.summary": "补全词曲作者、专辑艺术家等信息"
+}

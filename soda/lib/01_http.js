@@ -1,17 +1,11 @@
-const BASE_URL = "https://api.qishui.com/";
+// Android search and public SEO endpoints, verified against music-lib/soda:
+// https://github.com/guohuiyuan/music-lib/tree/main/soda
+const SEARCH_URL = "https://api.qishui.com/luna/search/track";
+const SEO_TRACK_URL = "https://beta-luna.douyin.com/luna/h5/seo_track";
 const SHARE_TRACK_URL = "https://music.douyin.com/qishui/share/track";
-const LUNA_PC_USER_AGENT = "LunaPC/3.5.1(408871041)";
+const SEARCH_USER_AGENT = "com.luna.music/100198030 (Linux; U; Android 15; zh_CN_#Hans; ABR-AL80; Build/V417IR;tt-ok/3.12.13.19)";
 const SHARE_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1";
-const DEFAULT_DEVICE_ID = "3753066532709850";
-const DEFAULT_INSTALL_ID = "3753066532713946";
-const RISK_CONTROL_MESSAGE = "汽水音乐请求已被风控。请稍后重试；若持续失败，请在插件设置中填写汽水 PC 客户端认证信息。";
-
-function stringConfig(config, key, fallback) {
-  const value = (config || {})[key];
-  return value === undefined || value === null || String(value).trim() === ""
-    ? String(fallback || "")
-    : String(value).trim();
-}
+const RISK_CONTROL_MESSAGE = "汽水音乐返回空响应或拒绝请求，请稍后重试";
 
 function buildQuery(params) {
   return Object.keys(params)
@@ -19,108 +13,59 @@ function buildQuery(params) {
     .join("&");
 }
 
-function randomUuid() {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(char) {
-    const value = Math.floor(Math.random() * 16);
-    const digit = char === "x" ? value : ((value & 3) | 8);
-    return digit.toString(16);
-  });
-}
-
-function buildClientParams(params, config) {
-  const deviceId = stringConfig(config, "device_id", DEFAULT_DEVICE_ID);
-  const common = {
-    aid: "386088",
-    app_name: "luna_pc",
-    region: "cn",
-    geo_region: "cn",
-    os_region: "cn",
-    sim_region: "",
-    device_id: deviceId,
-    cdid: "",
-    iid: stringConfig(config, "iid", DEFAULT_INSTALL_ID),
-    version_name: "3.5.1",
-    version_code: "30050100",
-    channel: "official",
-    build_mode: "master",
-    network_carrier: "",
-    ac: "wifi",
-    tz_name: "Asia/Shanghai",
-    resolution: "",
-    device_platform: "windows",
-    device_type: "Windows",
-    os_version: "Windows 10 Education",
-    fp: deviceId
-  };
-
-  Object.keys(params || {}).forEach(key => {
-    common[key] = params[key];
-  });
-  return common;
-}
-
-function hasSodaAuth(config) {
-  return Boolean(
-    stringConfig(config, "cookies", "") ||
-    stringConfig(config, "x_helios", "") ||
-    stringConfig(config, "x_medusa", "")
-  );
-}
-
-function buildApiHeaders(config) {
-  const headers = {
-    "User-Agent": LUNA_PC_USER_AGENT,
-    "Content-Type": "application/json; charset=utf-8"
-  };
-  const cookies = stringConfig(config, "cookies", "");
-  const xHelios = stringConfig(config, "x_helios", "");
-  const xMedusa = stringConfig(config, "x_medusa", "");
-
-  if (cookies) headers.Cookie = cookies;
-  if (xHelios) headers["X-Helios"] = xHelios;
-  if (xMedusa) headers["X-Medusa"] = xMedusa;
-  return headers;
-}
-
-function throwRiskControl(reason) {
-  if (Platform.log && typeof Platform.log.warn === "function") {
-    Platform.log.warn("SodaMusic", "Risk control detected: " + reason);
-  }
-  throw new Error(RISK_CONTROL_MESSAGE);
+function sodaDate(value) {
+  const text = String(value || "");
+  if (!/^\d{10}(?:\d{3})?$/.test(text)) return text;
+  const date = new Date(Number(text) * (text.length === 10 ? 1000 : 1));
+  return isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
 }
 
 function ensureResponseBody(text, responseName) {
   const body = text === undefined || text === null ? "" : String(text).trim();
-  if (!body) {
-    throwRiskControl("empty " + String(responseName || "API") + " response");
-  }
+  if (!body) throw new Error(RISK_CONTROL_MESSAGE);
   return body;
 }
 
 function parseJsonResponse(text, statusCode) {
-  const body = ensureResponseBody(text, "JSON");
-
-  if (statusCode === 403 || statusCode === 429) {
-    throwRiskControl("HTTP " + statusCode);
-  }
-
+  if (statusCode === 403 || statusCode === 429) throw new Error(RISK_CONTROL_MESSAGE);
   if (statusCode < 200 || statusCode >= 300) {
-    throw new Error("汽水音乐请求失败（HTTP " + statusCode + "），请稍后重试。");
+    throw new Error("汽水音乐请求失败（HTTP " + statusCode + "）");
   }
-
-  try {
-    return JSON.parse(body);
-  } catch (error) {
-    throwRiskControl("non-JSON response");
+  const body = ensureResponseBody(text, "JSON");
+  let root;
+  try { root = JSON.parse(body); }
+  catch (error) { throw new Error("汽水音乐返回无效 JSON"); }
+  if (!root || typeof root !== "object" || Array.isArray(root)) {
+    throw new Error("汽水音乐响应格式无效");
   }
+  const status = root.status_code || (root.status_info || {}).status_code || 0;
+  if (Number(status) !== 0) throw new Error("汽水音乐接口错误（" + status + "）");
+  return root;
 }
 
-function getJson(path, params, config) {
-  const response = Platform.http.get(
-    BASE_URL + path + "?" + buildQuery(buildClientParams(params, config)),
-    { headers: buildApiHeaders(config) }
-  );
+function getSodaJson(url, params, userAgent, config) {
+  const headers = { "User-Agent": userAgent, "Accept": "application/json" };
+  const cookies = String((config || {}).cookies || "").trim();
+  if (cookies) headers.Cookie = cookies;
+  const response = Platform.http.get(url + "?" + buildQuery(params), { headers: headers });
   return parseJsonResponse(response.body, Number(response.code || 0));
+}
+
+function getSearchJson(params, config) {
+  const query = {
+    aid: "386088", device_platform: "android", app_name: "luna",
+    version_code: "100198030", version_name: "19.8.0"
+  };
+  Object.keys(params).forEach(key => { query[key] = params[key]; });
+  const root = getSodaJson(SEARCH_URL, query, SEARCH_USER_AGENT, config);
+  if (!Array.isArray(root.result_groups)) throw new Error("汽水音乐搜索响应缺少 result_groups");
+  return root;
+}
+
+function getSeoTrackData(trackId, config) {
+  return getSodaJson(SEO_TRACK_URL, {
+    track_id: String(trackId), device_platform: "web"
+  }, SHARE_USER_AGENT, config);
 }
 
 function extractAssignedJson(text, assignmentName) {

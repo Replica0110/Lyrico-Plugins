@@ -558,7 +558,7 @@ function getLyrics(request) {
         config: request.config || {}
       });
 
-  return songs.map(function(song) {
+  const candidates = songs.map(function(song) {
     try {
       const lyrics = getLyricsForSong(request, song);
       const year = String(song.date || ((song.fields || {}).date) || "");
@@ -570,8 +570,10 @@ function getLyrics(request) {
       lyrics.tags.date = year;
       return lyrics;
     } catch (e) {
-      Platform.log.warn("Apple", "Lyrics candidate failed: " + String(e && e.message ? e.message : e));
+      Platform.log.warn("Apple", Platform.i18n.t("error.lyricsCandidate", String(song.title || song.id || ""), String(e && e.message ? e.message : e)));
       return null;
     }
   }).filter(Boolean);
+  Platform.log.debug("Apple", Platform.i18n.t("status.lyricsCandidates", String(requestedSong.title || requestedSong.id || ""), candidates.length));
+  return candidates;
 }

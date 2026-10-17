@@ -18,6 +18,7 @@ import {
   readJson
 } from './fs-utils.js';
 import { Report } from './report.js';
+import { loadStrings } from './i18n.js';
 
 const PLUGIN_ID_RE = /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/;
 
@@ -67,6 +68,12 @@ export async function validatePluginRoot(pluginRoot) {
 
   validateManifestShape(manifest, report);
   await validateFiles(absoluteRoot, manifest, report);
+  try {
+    await loadStrings(absoluteRoot, manifest);
+    report.pass('Plugin localization resources are valid');
+  } catch (error) {
+    report.error('Invalid plugin localization', error.message);
+  }
 
   const totalSize = await directorySize(absoluteRoot);
   if (totalSize > LIMITS.singlePluginBytes) {

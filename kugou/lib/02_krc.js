@@ -52,23 +52,27 @@ function parseKrc(krcText) {
 
     while ((wordMatch = wordRe.exec(lineContent)) !== null) {
       const offset = Number(wordMatch[1] || 0);
+      const duration = Number(wordMatch[2] || 0);
       const text = wordMatch[4] || "";
 
       // 对齐 master：这里不丢空 text。
       // 空 text 对 language 罗马音的行号对齐有意义。
-      wordOffsets.push([offset, text]);
+      wordOffsets.push([offset, duration, text]);
     }
 
     const words = [];
 
     wordOffsets.forEach((item, index) => {
       const offset = item[0];
-      const text = item[1];
+      const duration = Number(item[1] || 0);
+      const text = item[2];
 
       const wordStart = lineStart + offset;
-      const wordEnd = index < wordOffsets.length - 1
-        ? lineStart + Number(wordOffsets[index + 1][0] || offset)
-        : lineEnd;
+      const wordEnd = duration > 0
+        ? wordStart + duration
+        : (index < wordOffsets.length - 1
+          ? lineStart + Number(wordOffsets[index + 1][0] || offset)
+          : lineEnd);
 
       words.push([wordStart, wordEnd, text]);
     });

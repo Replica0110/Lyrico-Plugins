@@ -80,7 +80,7 @@ function mapTrack(track, request) {
     title: String(track.name || ""),
     artist: names(track.artists, request.separator),
     album: String((track.album || {}).name || ""),
-    date: String(
+    date: sodaDate(
       track.publish_time ||
       track.publishTime ||
       (track.album || {}).release_date ||
@@ -122,25 +122,29 @@ function mapTrack(track, request) {
 }
 
 function searchSongs(request) {
-  const cursor = Math.max(0, (Number(request.page || 1) - 1) * Number(request.pageSize || 20));
-
-  const root = getJson("luna/pc/search/track", {
+  const pageSize = Math.max(1, Math.min(50, Number(request.pageSize || 20)));
+  const cursor = Math.max(0, (Number(request.page || 1) - 1) * pageSize);
+  const root = getSearchJson({
     q: request.keyword || "",
     cursor: cursor,
-    search_id: randomUuid(),
-    search_method: "input",
-    debug_params: "",
-    from_search_id: "",
-    search_scene: ""
+    count: pageSize
   }, request.config || {});
 
-  const data = ((((root.result_groups || [])[0] || {}).data) || []);
+  const data = [];
+  (root.result_groups || []).forEach(group => {
+    (group.data || []).forEach(item => data.push(item));
+  });
+  const seen = {};
 
   return data
     .map(item => item.entity && item.entity.track)
     .filter(Boolean)
     .map(track => mapTrack(track, request))
-    .filter(song => song.id && song.title);
+    .filter(song => {
+      if (!song.id || !song.title || seen[song.id]) return false;
+      seen[song.id] = true;
+      return true;
+    }).slice(0, pageSize);
 }
 
 function searchCovers(request) {
@@ -163,23 +167,24 @@ function getLyricsForSong(request, song) {
   let raw = "";
   let translatedRaw = "";
 
-  if (!hasSodaAuth(config)) {
+  let detailSong = {};
+  try {
+    const root = getSeoTrackData(trackId, config);
+    const seo = root.seo_track || {};
+    detailSong = mapTrack(seo.track || {}, { separator: "/" });
+    const lyric = (seo.lyric || {}).content ? seo.lyric : (root.lyric || {});
+    raw = String(lyric.content || "");
+    translatedRaw = String(((lyric.translations || {}).cn) || "");
+  } catch (error) {
+    Platform.log.warn("SODA", Platform.i18n.t("warn.seoLyricsFallback", String(error && error.message ? error.message : error)));
+  }
+
+  if (!raw && !translatedRaw) {
     try {
       raw = shareLyricsToLrc(getShareTrackData(trackId));
     } catch (error) {
-      Platform.log.warn("SODA", "Share lyrics failed, falling back to track_v2: " + String(error && error.message ? error.message : error));
+      Platform.log.warn("SODA", Platform.i18n.t("warn.shareLyricsFallback", String(error && error.message ? error.message : error)));
     }
-  }
-
-  if (!raw) {
-    const root = getJson("luna/pc/track_v2", {
-      track_id: trackId,
-      media_type: "track",
-      queue_type: ""
-    }, config);
-    const lyric = root.lyric || {};
-    raw = String(lyric.content || "");
-    translatedRaw = String(((lyric.translations || {}).cn) || "");
   }
 
   if (!raw && !translatedRaw) return null;
@@ -191,9 +196,10 @@ function getLyricsForSong(request, song) {
   });
 
   const tags = parsed.tags || {};
-  tags.ti = tags.ti || song.title || "";
-  tags.ar = tags.ar || song.artist || "";
-  tags.al = tags.al || song.album || "";
+  tags.ti = song.title || detailSong.title || tags.ti || "";
+  tags.ar = song.artist || detailSong.artist || tags.ar || "";
+  tags.al = song.album || detailSong.album || tags.al || "";
+  tags.date = sodaDate(song.date || ((song.fields || {}).date) || detailSong.date || "");
 
   return {
     type: "structured",
@@ -219,16 +225,11 @@ function getLyrics(request) {
   return songs.map(function(song) {
     try {
       const lyrics = getLyricsForSong(request, song);
-      const year = String(song.date || ((song.fields || {}).date) || "");
-      if (!lyrics || !song.title || !song.artist || !song.album || !year) return null;
-      lyrics.tags = lyrics.tags || {};
-      lyrics.tags.ti = String(song.title);
-      lyrics.tags.ar = String(song.artist);
-      lyrics.tags.al = String(song.album);
-      lyrics.tags.date = year;
+      if (!lyrics || !(lyrics.original || []).length && !(lyrics.translated || []).length) return null;
+      if (!lyrics.tags.ti || !lyrics.tags.ar || !lyrics.tags.al || !lyrics.tags.date) return null;
       return lyrics;
     } catch (e) {
-      Platform.log.warn("SODA", "Lyrics candidate failed: " + String(e && e.message ? e.message : e));
+      Platform.log.warn("SODA", Platform.i18n.t("error.lyricsCandidate", String(song.title || song.id || ""), String(e && e.message ? e.message : e)));
       return null;
     }
   }).filter(Boolean);

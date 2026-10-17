@@ -1,0 +1,7 @@
+{
+  "plugin.name": "Kugou Music",
+  "plugin.description": "Kugou Music search source plugin\nContributors: qingyueyin, BambooPanda92",
+  "error.lyricsCandidate": "Lyrics candidate %1$s failed: %2$s",
+  "config.metadata_details.title": "Metadata enrichment",
+  "config.metadata_details.summary": "Fetch writers, composers, album artists and more"
+}
