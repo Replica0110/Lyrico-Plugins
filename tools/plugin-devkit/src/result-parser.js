@@ -99,7 +99,6 @@ export function parseLyricsResult(rawJson, { warnings = [] } = {}) {
 
   const original = parseCompactWordLines(firstArray(root, ['original', 'lines']) ?? []);
   const translated = parseCompactTextLines(firstArray(root, ['translated', 'translation', 'translations']) ?? []);
-  // 音译支持词级（逐字注音，与 original 同构）：词数组逐词解析，整行字符串退化为整行，兼容旧插件
   const romanization = parseCompactWordLines(firstArray(root, ['romanization', 'romanized', 'roma']) ?? []);
   const agents = parseAgents(firstArray(root, ['agents']) ?? []);
   const metadata = parseMetadata(firstArray(root, ['metadata']) ?? [], warnings);
