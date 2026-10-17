@@ -408,7 +408,24 @@ function getLyricsForSong(request, song) {
     }
   }
   if (lyricLines && lyricLines.versions && lyricLines.versions.length) {
-    return buildStructuredFromVersions(lyricLines, fields, song);
+    var structured = buildStructuredFromVersions(lyricLines, fields, song);
+    // rawTtml 双保险：字符级原文直通宿主管线（新版宿主 TtmlParser 保真解析词时间/段落/元数据；
+    // 旧版宿主忽略未知字段不受影响）。拉取失败不阻断 structured 返回
+    if (structured && trackId) {
+      try {
+        var detailResp = LrcShare.get("/song/" + encodeURIComponent(trackId), {}, config);
+        var versionList = (detailResp && detailResp.data && detailResp.data.lyric_versions) || [];
+        for (var vi = 0; vi < versionList.length; vi++) {
+          if (versionList[vi].format === "ttml" && versionList[vi].ttml_text) {
+            structured.rawTtml = versionList[vi].ttml_text;
+            break;
+          }
+        }
+      } catch (e) {
+        Platform.log.warn("LrcShare", "rawTtml fetch failed: " + (e && e.message ? e.message : e));
+      }
+    }
+    return structured;
   }
 
   // 回退：raw LRC（老数据 / 无多语言版本）

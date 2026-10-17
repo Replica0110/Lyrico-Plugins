@@ -1,3 +1,5 @@
 dist/
 .release-staging/
+lrcshare.zip
+*.zip
 
