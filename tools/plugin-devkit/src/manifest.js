@@ -100,6 +100,18 @@ export function validateManifestShape(manifest, report = new Report()) {
     }
   }
 
+  if (manifest.updateUrl != null) {
+    try {
+      const url = new URL(manifest.updateUrl);
+      if (typeof manifest.updateUrl !== 'string' || !['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.hash) {
+        throw new Error('Expected an absolute HTTP or HTTPS URL without credentials or fragment');
+      }
+      report.pass('updateUrl is valid');
+    } catch (error) {
+      report.error('Invalid updateUrl', error.message);
+    }
+  }
+
   requireString(manifest, report, 'name');
   requireString(manifest, report, 'versionName');
   requirePositiveInt(manifest, report, 'versionCode');

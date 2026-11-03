@@ -33,5 +33,6 @@
       "type": "switch",
       "defaultValue": "true"
     }
-  ]
+  ],
+  "updateUrl": "https://github.com/Replica0110/Lyrico-Plugins/releases/latest/download/catalog.json"
 }

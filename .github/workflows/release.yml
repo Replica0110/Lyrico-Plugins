@@ -11,6 +11,10 @@ on:
         description: Release title
         required: false
         type: string
+      changelog:
+        description: Release changelog (Markdown, shared by all plugins)
+        required: true
+        type: string
       prerelease:
         description: Mark as prerelease
         required: false
@@ -37,7 +41,10 @@ jobs:
 
       - name: Build release packages
         working-directory: plugins
-        run: node scripts/package-release.mjs --out dist/release
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_CHANGELOG: ${{ inputs.changelog }}
+        run: node scripts/package-release.mjs --out dist/release --repository "$GITHUB_REPOSITORY" --tag "$RELEASE_TAG"
 
       - name: Create or update GitHub release
         working-directory: plugins
@@ -55,7 +62,7 @@ jobs:
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release edit "$RELEASE_TAG" --title "$title" --notes-file dist/release/release-notes.md $prerelease_flag
-            gh release upload "$RELEASE_TAG" dist/release/*.zip dist/release/release-manifest.json --clobber
+            gh release upload "$RELEASE_TAG" dist/release/*.zip dist/release/catalog.json --clobber
           else
-            gh release create "$RELEASE_TAG" dist/release/*.zip dist/release/release-manifest.json --title "$title" --notes-file dist/release/release-notes.md $prerelease_flag
+            gh release create "$RELEASE_TAG" dist/release/*.zip dist/release/catalog.json --title "$title" --notes-file dist/release/release-notes.md $prerelease_flag
           fi

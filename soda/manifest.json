@@ -40,5 +40,6 @@
       "zh-Hans": "locales/zh-Hans.json",
       "zh-Hant": "locales/zh-Hant.json"
     }
-  }
+  },
+  "updateUrl": "https://github.com/Replica0110/Lyrico-Plugins/releases/latest/download/catalog.json"
 }

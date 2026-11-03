@@ -1,12 +1,17 @@
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
 const args = parseArgs(process.argv.slice(2));
+const changelog = process.env.RELEASE_CHANGELOG ?? '';
+if (args.tag && !changelog.trim()) throw new Error('RELEASE_CHANGELOG is required for a release');
 const root = path.resolve(args.root ?? '.');
 const devkit = path.resolve(args.devkit ?? 'tools/plugin-devkit/src/cli.js');
 const outDir = path.resolve(args.out ?? 'dist/release');
+const repository = args.repository ?? 'Replica0110/Lyrico-Plugins';
+const downloadBase = `https://github.com/${repository}/releases/${args.tag ? `download/${encodeURIComponent(args.tag)}` : 'latest/download'}/`;
 const stagingRoot = path.resolve(args.staging ?? '.release-staging/Lyrico-Plugins');
 
 await ensureFile(devkit, 'Plugin devkit CLI');
@@ -22,7 +27,6 @@ await fs.promises.rm(path.dirname(stagingRoot), { recursive: true, force: true }
 await fs.promises.mkdir(outDir, { recursive: true });
 await fs.promises.mkdir(stagingRoot, { recursive: true });
 
-const assets = [];
 const packagedPlugins = [];
 for (const plugin of plugins) {
   const display = localizeManifest(plugin.manifest, await loadStrings(plugin.root, plugin.manifest, ['zh-CN', 'en']));
@@ -32,84 +36,44 @@ for (const plugin of plugins) {
   await run('node', [devkit, 'pack', plugin.root, '--out', output]);
   await copyDir(plugin.root, path.join(stagingRoot, rel));
   const asset = path.basename(output);
-  assets.push(asset);
   packagedPlugins.push({
-    ...plugin,
     manifest: display,
     asset,
-    root: rel.replaceAll(path.sep, '/')
+    size: (await fs.promises.stat(output)).size,
+    sha256: createHash('sha256').update(await fs.promises.readFile(output)).digest('hex')
   });
 }
 
 const allPluginsZip = path.join(outDir, 'Lyrico-Plugins.zip');
 const result = await writeZipFromDirectory(stagingRoot, allPluginsZip);
-assets.push(path.basename(allPluginsZip));
 
 await fs.promises.writeFile(
-  path.join(outDir, 'release-manifest.json'),
+  path.join(outDir, 'catalog.json'),
   JSON.stringify({
-    generatedAt: new Date().toISOString(),
+    schemaVersion: 1,
     plugins: packagedPlugins.map(plugin => ({
       id: plugin.manifest.id,
       name: plugin.manifest.name,
       versionCode: plugin.manifest.versionCode,
       versionName: plugin.manifest.versionName,
-      root: plugin.root,
-      asset: plugin.asset
-    })),
-    assets
+      apiVersion: plugin.manifest.apiVersion,
+      minHostApiVersion: plugin.manifest.minHostApiVersion ?? 1,
+      downloadUrl: new URL(encodeURIComponent(plugin.asset), downloadBase).href,
+      sha256: plugin.sha256,
+      size: plugin.size,
+      changelog
+    }))
   }, null, 2)
 );
 
 await fs.promises.writeFile(
   path.join(outDir, 'release-notes.md'),
-  buildReleaseNotes(packagedPlugins, assets),
+  changelog,
   'utf8'
 );
 
 await fs.promises.rm(path.dirname(stagingRoot), { recursive: true, force: true });
 console.log(`Packed ${plugins.length} plugin zips and ${result.entries} all-plugin entries into ${outDir}`);
-
-function buildReleaseNotes(packagedPlugins, assets) {
-  const lines = [
-    `从 manifest.json 发现并生成了 ${packagedPlugins.length} 个 Lyrico 插件包。`,
-    '',
-    '## 插件'
-  ];
-
-  for (const plugin of packagedPlugins) {
-    const manifest = plugin.manifest;
-    const version = [manifest.versionName, manifest.versionCode != null ? `code ${manifest.versionCode}` : null]
-      .filter(Boolean)
-      .join(', ');
-    const capabilities = Array.isArray(manifest.capabilities) && manifest.capabilities.length > 0
-      ? manifest.capabilities.join(', ')
-      : '未声明';
-    const description = singleLine(manifest.description);
-
-    lines.push(`- ${singleLine(manifest.name)} (${manifest.id}) ${version ? `v${version}` : '版本未声明'}`);
-    if (description) lines.push(`  - 描述: ${description}`);
-    lines.push(`  - 能力: ${capabilities}`);
-    lines.push(`  - 包名: ${plugin.asset}`);
-  }
-
-  lines.push(
-    '',
-    '## 产物',
-    `- Lyrico-Plugins.zip: 包含全部 ${packagedPlugins.length} 个插件目录的聚合包。`,
-    '- release-manifest.json: 机器可读的包元数据。'
-  );
-
-  for (const asset of assets.filter(asset => asset.endsWith('.zip') && asset !== 'Lyrico-Plugins.zip')) {
-    lines.push(`- ${asset}: 单个插件包。`);
-  }
-
-  return `${lines.join('\n')}\n`;
-}
-
-function singleLine(value) {
-  return String(value ?? '').replace(/\s+/g, ' ').trim();
-}
 
 async function discoverPlugins(searchRoot) {
   const manifestPaths = [];
