@@ -1,38 +1,35 @@
 name: Plugin Release
 
 on:
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: Release tag to create or update
+        description: Existing release tag to build
         required: true
         type: string
-      title:
-        description: Release title
-        required: false
-        type: string
-      changelog:
-        description: Release changelog (Markdown, shared by all plugins)
-        required: true
-        type: string
-      prerelease:
-        description: Mark as prerelease
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: write
 
+concurrency:
+  group: plugin-release-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
 
     steps:
-      - name: Checkout plugins
+      - name: Checkout release tag
         uses: actions/checkout@v4
         with:
           path: plugins
+          ref: refs/tags/${{ env.RELEASE_TAG }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -41,28 +38,11 @@ jobs:
 
       - name: Build release packages
         working-directory: plugins
-        env:
-          RELEASE_TAG: ${{ inputs.tag }}
-          RELEASE_CHANGELOG: ${{ inputs.changelog }}
-        run: node scripts/package-release.mjs --out dist/release --repository "$GITHUB_REPOSITORY" --tag "$RELEASE_TAG"
-
-      - name: Create or update GitHub release
-        working-directory: plugins
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.tag }}
-          RELEASE_TITLE: ${{ inputs.title }}
-          PRERELEASE: ${{ inputs.prerelease }}
         run: |
-          title="${RELEASE_TITLE:-$RELEASE_TAG}"
-          prerelease_flag=""
-          if [ "$PRERELEASE" = "true" ]; then
-            prerelease_flag="--prerelease"
-          fi
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body > "$RUNNER_TEMP/plugin-release-notes.md"
+          export RELEASE_CHANGELOG="$(cat "$RUNNER_TEMP/plugin-release-notes.md")"
+          node scripts/package-release.mjs --out dist/release --repository "$GITHUB_REPOSITORY" --tag "$RELEASE_TAG"
 
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release edit "$RELEASE_TAG" --title "$title" --notes-file dist/release/release-notes.md $prerelease_flag
-            gh release upload "$RELEASE_TAG" dist/release/*.zip dist/release/catalog.json --clobber
-          else
-            gh release create "$RELEASE_TAG" dist/release/*.zip dist/release/catalog.json --title "$title" --notes-file dist/release/release-notes.md $prerelease_flag
-          fi
+      - name: Upload release assets
+        working-directory: plugins
+        run: gh release upload "$RELEASE_TAG" dist/release/*.zip dist/release/catalog.json --repo "$GITHUB_REPOSITORY" --clobber
