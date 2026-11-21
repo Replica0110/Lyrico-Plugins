@@ -406,11 +406,7 @@ function parseQrcFormat(text) {
       words.push([wordStart, wordEnd, wordText]);
     });
 
-    if (!words.length) {
-      words.push([lineStart, lineEnd, lineContent]);
-    }
-
-    result.push([lineStart, lineEnd, words]);
+    result.push([lineStart, lineEnd, words.length ? words : lineContent]);
   });
 
   return result;
@@ -449,15 +445,14 @@ function parseLrcFormat(text) {
     return [
       current[0],
       end,
-      [[current[0], end, current[1]]]
+      current[1]
     ];
   });
 }
 
-function compactWordsText(words) {
-  return (Array.isArray(words) ? words : [])
-    .map(word => Array.isArray(word) ? String(word[2] || "") : "")
-    .join("");
+function parseQqLyrics(text) {
+  const qrc = parseQrcFormat(text);
+  return qrc.length ? qrc : (parseLrcFormat(text) || []);
 }
 
 function lyricsMerge(originalLines, transLines) {
@@ -480,7 +475,7 @@ function lyricsMerge(originalLines, transLines) {
       ? Number(originalLines[i + 1][0] || winStart)
       : Number.MAX_SAFE_INTEGER;
 
-    let matchedText = "";
+    let matchedContent = "";
 
     while (transIdx < transCount) {
       const trans = sortedTransLines[transIdx];
@@ -495,22 +490,16 @@ function lyricsMerge(originalLines, transLines) {
         break;
       }
 
-      matchedText = compactWordsText(trans[2]);
+      matchedContent = trans[2];
       transIdx++;
       break;
     }
 
-    // translated / romanization 必须返回整行文本格式：
-    // [lineStartMs, lineEndMs, "text"]
-    //
-    // 不能返回：
-    // [lineStartMs, lineEndMs, [[wordStartMs, wordEndMs, "text"]]]
-    //
-    // 否则宿主 parseCompactTextLines() 会把第三项当成空文本过滤掉。
+    // Align the line anchor without flattening QRC words or inventing LRC word timing.
     alignedList.push([
       winStart,
       origEnd,
-      matchedText
+      matchedContent
     ]);
   }
 
@@ -567,9 +556,9 @@ function getLyricsForSong(request, song) {
   const trans = data.trans ? decodeQqLyricPayload(data.trans) : "";
   const roma = data.roma ? decodeQqLyricPayload(data.roma) : "";
 
-  const original = parseQrcFormat(qrc);
-  const translated = lyricsMerge(original, parseLrcFormat(trans));
-  const romanization = lyricsMerge(original, parseQrcFormat(roma));
+  const original = parseQqLyrics(qrc);
+  const translated = lyricsMerge(original, parseQqLyrics(trans));
+  const romanization = lyricsMerge(original, parseQqLyrics(roma));
 
   if (
     !original.length &&

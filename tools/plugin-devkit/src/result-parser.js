@@ -98,7 +98,7 @@ export function parseLyricsResult(rawJson, { warnings = [] } = {}) {
   }
 
   const original = parseCompactWordLines(firstArray(root, ['original', 'lines']) ?? []);
-  const translated = parseCompactTextLines(firstArray(root, ['translated', 'translation', 'translations']) ?? []);
+  const translated = parseCompactWordLines(firstArray(root, ['translated', 'translation', 'translations']) ?? []);
   const romanization = parseCompactWordLines(firstArray(root, ['romanization', 'romanized', 'roma']) ?? []);
   const agents = parseAgents(firstArray(root, ['agents']) ?? []);
   const metadata = parseMetadata(firstArray(root, ['metadata']) ?? [], warnings);
@@ -116,7 +116,7 @@ export function parseLyricsResult(rawJson, { warnings = [] } = {}) {
     translatedLang: firstPrimitiveString(root, ['translatedLang', 'translated_lang']) ?? '',
     romanizationLang: firstPrimitiveString(root, ['romanizationLang', 'romanization_lang']) ?? '',
     type,
-    isWordByWord: original.some(line => line.words.length > 1),
+    isWordByWord: [...original, ...translated, ...romanization].some(line => line.isWordByWord),
   };
 
   return result;
@@ -341,7 +341,8 @@ function parseCompactWordLines(lines) {
         start,
         end: Number.isFinite(end) ? end : start,
         words,
-        extensions: acceptedExtensions
+        extensions: acceptedExtensions,
+        isWordByWord: Array.isArray(wordsValue)
       };
     })
     .filter(Boolean);
@@ -417,21 +418,4 @@ function primitiveStringMap(value) {
       .map(([key, item]) => [key, primitiveString(item)])
       .filter(([, item]) => item != null)
   );
-}
-
-function parseCompactTextLines(lines) {
-  return lines
-    .filter(Array.isArray)
-    .map(line => {
-      const start = Number(line[0]);
-      const end = Number(line[1]);
-      const text = String(line[2] ?? '');
-      if (!Number.isFinite(start) || !text) return null;
-      return {
-        start,
-        end: Number.isFinite(end) ? end : start,
-        words: [{ start, end: Number.isFinite(end) ? end : start, text }]
-      };
-    })
-    .filter(Boolean);
 }
