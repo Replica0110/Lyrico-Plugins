@@ -1,0 +1,20 @@
+{
+  "id": "com.lrclib.source",
+  "name": "LRCLIB",
+  "versionCode": 1,
+  "versionName": "1.0.0",
+  "author": "BingoKingo",
+  "description": "LRCLIB 歌词源插件：搜索歌曲、获取同步/纯文本歌词，并在需要时使用 iTunes 补全封面。",
+  "apiVersion": 5,
+  "minHostApiVersion": 4,
+  "includeDirs": [
+    "lib"
+  ],
+  "icon": "icon.png",
+  "entry": "source.js",
+  "capabilities": [
+    "searchSongs",
+    "getLyrics"
+  ],
+  "configFields": []
+}

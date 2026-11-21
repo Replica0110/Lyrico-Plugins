@@ -1,0 +1,5 @@
+{
+  "plugin.description": "Spotify 歌詞源：通过 Spotify 获取同步与纯文本歌詞（需要 sp_dc Cookie）\n貢獻者：BingoKingo",
+  "config.sp_dc.title": "sp_dc Cookie",
+  "config.sp_dc.summary": "用于歌词请求鉴权的 Spotify sp_dc Cookie"
+}

@@ -1,0 +1,5 @@
+{
+  "plugin.description": "Spotify lyrics source: synced and plain lyrics via Spotify (requires sp_dc cookie)\nContributors: BingoKingo",
+  "config.sp_dc.title": "sp_dc cookie",
+  "config.sp_dc.summary": "Spotify sp_dc cookie used to authenticate lyrics requests"
+}
