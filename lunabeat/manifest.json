@@ -1,0 +1,28 @@
+{
+  "id": "com.lunabeat.source",
+  "name": "LunaBeat",
+  "versionCode": 1,
+  "versionName": "1.0.0",
+  "author": "BingoKingo",
+  "description": "@plugin.description",
+  "apiVersion": 5,
+  "minHostApiVersion": 4,
+  "includeDirs": [
+    "lib"
+  ],
+  "icon": "icon.png",
+  "entry": "source.js",
+  "capabilities": [
+    "searchSongs",
+    "getLyrics"
+  ],
+  "configFields": [],
+  "i18n": {
+    "defaultLocale": "en",
+    "resources": {
+      "en": "locales/en.json",
+      "zh-Hans": "locales/zh-Hans.json",
+      "zh-Hant": "locales/zh-Hant.json"
+    }
+  }
+}

@@ -24,6 +24,16 @@ https://github.com/Replica0110/Lyrico-Plugins/releases/latest/download/catalog.j
 | Apple Music | ✓ | ✓ | ✓ |
 | MusicBrainz | ✓ | — | ✓ |
 | LrcShare | ✓ | ✓ | ✓ |
+| LRCLIB | ✓ | ✓ | — |
+| Musixmatch | ✓ | ✓ | ✓ |
+| AMLL | ✓ | ✓ | — |
+| Unison | ✓ | ✓ | — |
+| SimpMusic | ✓ | ✓ | — |
+| LunaBeat | ✓ | ✓ | — |
+| Binimum | — | ✓ | — |
+| lrc.red | ✓ | ✓ | ✓ |
+| PetitLyrics | — | ✓ | — |
+| Spotify | ✓ | ✓ | — |
 
 ## 本地导入
 

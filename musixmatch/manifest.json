@@ -1,0 +1,93 @@
+{
+  "id": "com.musixmatch.source",
+  "name": "Musixmatch",
+  "versionCode": 2,
+  "versionName": "0.2.0",
+  "author": "BingoKingo",
+  "description": "Musixmatch 搜索源插件（以歌词为主）",
+  "apiVersion": 5,
+  "includeDirs": [
+    "lib"
+  ],
+  "icon": "icon.png",
+  "entry": "source.js",
+  "capabilities": [
+    "searchSongs",
+    "getLyrics",
+    "searchCovers"
+  ],
+  "configFields": [
+    {
+      "key": "usertoken",
+      "title": "User Token",
+      "summary": "Musixmatch 登录态 token，用于获取歌词。可在 Musixmatch 网页版登录后，从任意 apic-desktop.musixmatch.com 请求的查询参数中抓取 usertoken 字段。留空则本源不可用。",
+      "group": "认证",
+      "type": "password",
+      "required": false,
+      "defaultValue": ""
+    },
+    {
+      "key": "lyrics_mode",
+      "title": "歌词模式",
+      "summary": "逐字优先会尝试获取逐词（karaoke）时间轴，无逐字数据时自动回退逐行 LRC；仅逐行则只获取逐行 LRC。",
+      "group": "歌词",
+      "type": "dropdown",
+      "required": true,
+      "defaultValue": "word",
+      "options": [
+        {
+          "value": "word",
+          "label": "逐字优先（无则回退逐行）"
+        },
+        {
+          "value": "line",
+          "label": "仅逐行 LRC"
+        }
+      ]
+    },
+    {
+      "key": "translation_language",
+      "title": "翻译语言",
+      "summary": "获取歌词译文的目标语言 id，关闭则不获取译文。",
+      "group": "歌词",
+      "type": "dropdown",
+      "required": true,
+      "defaultValue": "off",
+      "options": [
+        {
+          "value": "off",
+          "label": "关闭"
+        },
+        {
+          "value": "9",
+          "label": "英语"
+        },
+        {
+          "value": "14",
+          "label": "中文"
+        },
+        {
+          "value": "3",
+          "label": "法语"
+        },
+        {
+          "value": "4",
+          "label": "德语"
+        },
+        {
+          "value": "7",
+          "label": "意大利语"
+        },
+        {
+          "value": "30",
+          "label": "日语"
+        },
+        {
+          "value": "31",
+          "label": "韩语"
+        }
+      ]
+    }
+  ],
+  "minHostApiVersion": 4
+}
