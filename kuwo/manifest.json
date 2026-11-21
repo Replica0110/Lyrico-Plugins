@@ -1,0 +1,70 @@
+{
+  "id": "com.kuwo.source",
+  "name": "@plugin.name",
+  "versionCode": 1,
+  "versionName": "0.1.0",
+  "author": "酷安@不要说我是小白",
+  "description": "@plugin.description",
+  "apiVersion": 5,
+  "minHostApiVersion": 4,
+  "entry": "source.js",
+  "includeDirs": [
+    "lib"
+  ],
+  "icon": "icon.png",
+  "capabilities": [
+    "searchSongs",
+    "getLyrics",
+    "searchCovers"
+  ],
+  "configFields": [
+    {
+      "key": "cover_size",
+      "title": "@config.cover_size.title",
+      "summary": "@config.cover_size.summary",
+      "group": "@group.cover",
+      "type": "dropdown",
+      "required": true,
+      "defaultValue": "500",
+      "options": [
+        {
+          "value": "240",
+          "label": "240 × 240"
+        },
+        {
+          "value": "500",
+          "label": "500 × 500"
+        },
+        {
+          "value": "1200",
+          "label": "1200 × 1200"
+        }
+      ]
+    },
+    {
+      "key": "metadata_details",
+      "title": "@config.metadata_details.title",
+      "summary": "@config.metadata_details.summary",
+      "group": "@group.metadata",
+      "type": "switch",
+      "defaultValue": "true"
+    },
+    {
+      "key": "timeout",
+      "title": "@config.timeout.title",
+      "summary": "@config.timeout.summary",
+      "group": "@group.request",
+      "type": "number",
+      "defaultValue": "15"
+    }
+  ],
+  "updateUrl": "https://github.com/Replica0110/Lyrico-Plugins/releases/latest/download/catalog.json",
+  "i18n": {
+    "defaultLocale": "en",
+    "resources": {
+      "en": "locales/en.json",
+      "zh-Hans": "locales/zh-Hans.json",
+      "zh-Hant": "locales/zh-Hant.json"
+    }
+  }
+}

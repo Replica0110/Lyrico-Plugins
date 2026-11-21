@@ -1,0 +1,17 @@
+{
+  "plugin.name": "Kuwo Music",
+  "plugin.description": "Kuwo Music source plugin ported from LDDC KwApi: word-by-word lyrics, album covers, release date enrichment\nContributor: LDDC",
+  "group.cover": "Cover",
+  "group.metadata": "Metadata",
+  "group.request": "Request",
+  "config.cover_size.title": "Cover size",
+  "config.cover_size.summary": "Size segment of Kuwo cover paths: 240 / 500 / 1200",
+  "config.metadata_details.title": "Full metadata",
+  "config.metadata_details.summary": "Resolve release date and album artist via album lookup, up to 3 albums per search",
+  "config.timeout.title": "Timeout (s)",
+  "config.timeout.summary": "Read timeout for a single request",
+  "error.searchSongsFailed": "Song search failed: %1$s",
+  "error.lyricsCandidate": "Lyrics candidate failed for %1$s: %2$s",
+  "warn.lyricDecodeFailed": "Encrypted lyrics decode failed for %1$s: %2$s",
+  "warn.lyricFallbackFailed": "Line-level lyrics fallback failed for %1$s: %2$s"
+}

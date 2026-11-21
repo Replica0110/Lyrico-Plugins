@@ -1,0 +1,17 @@
+{
+  "plugin.name": "酷我音乐",
+  "plugin.description": "酷我音乐搜索源插件，协议移植自 LDDC 的 KwApi：逐字歌词、专辑封面、发行日期补全\n贡献者：LDDC",
+  "group.cover": "封面",
+  "group.metadata": "元数据",
+  "group.request": "请求",
+  "config.cover_size.title": "封面大小",
+  "config.cover_size.summary": "酷我封面路径的尺寸段，240 / 500 / 1200",
+  "config.metadata_details.title": "补全元数据",
+  "config.metadata_details.summary": "按专辑补全发行日期与专辑艺人，每次搜索最多查 3 张专辑",
+  "config.timeout.title": "超时（秒）",
+  "config.timeout.summary": "单次请求读取超时",
+  "error.searchSongsFailed": "歌曲搜索失败：%1$s",
+  "error.lyricsCandidate": "歌曲 %1$s 的歌词候选获取失败：%2$s",
+  "warn.lyricDecodeFailed": "歌曲 %1$s 的加密歌词解析失败：%2$s",
+  "warn.lyricFallbackFailed": "歌曲 %1$s 的逐行歌词兜底失败：%2$s"
+}

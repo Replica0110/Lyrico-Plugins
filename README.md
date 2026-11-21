@@ -19,6 +19,7 @@ https://github.com/Replica0110/Lyrico-Plugins/releases/latest/download/catalog.j
 | 网易云音乐 | ✓ | ✓ | ✓ |
 | QQ 音乐 | ✓ | ✓ | ✓ |
 | 酷狗音乐 | ✓ | ✓ | ✓ |
+| 酷我音乐 | ✓ | ✓ | ✓ |
 | 汽水音乐 | ✓ | ✓ | ✓ |
 | Apple Music | ✓ | ✓ | ✓ |
 | MusicBrainz | ✓ | — | ✓ |

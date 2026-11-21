@@ -78,8 +78,8 @@ test('missing translations fall back by key and malformed resources are rejected
   }
 });
 
-test('all seven plugins resolve their display fields in three languages without changing business data', async () => {
-  for (const name of ['apple', 'kugou', 'lrcshare', 'musicbrainz', 'netease', 'qq', 'soda']) {
+test('all plugins resolve their display fields in three languages without changing business data', async () => {
+  for (const name of ['apple', 'kugou', 'kuwo', 'lrcshare', 'musicbrainz', 'netease', 'qq', 'soda']) {
     const root = path.resolve(appleRoot, '..', name);
     const plugin = await loadPlugin(root);
     const before = JSON.stringify(plugin.manifest);
