@@ -4,14 +4,25 @@ var SvPlugin = SvPlugin || {};
 
 SvPlugin.separator = "/";
 
-/** 去掉 URL 上的查询参数，拿原图（StreetVoice 图片 CDN 带 ?x-oss-process=... 缩放） */
-SvPlugin.fullSizeUrl = function(url) {
-  if (!url) return "";
-  var i = String(url).indexOf("?");
-  return i > 0 ? String(url).substring(0, i) : String(url);
+/** 读取 config.cover_size：'original'（默认，原图无参数）/ 'sv'（StreetVoice 默认裁切）/ 数字 N（N×N 正方形） */
+SvPlugin.getCoverSize = function(request) {
+  var cfg = (request && request.config) || {};
+  return String(cfg.cover_size || "").trim();
 };
 
-SvPlugin.mapSong = function(item) {
+SvPlugin.coverUrl = function(url, size) {
+  if (!url) return "";
+  var s = String(url);
+  var q = s.indexOf("?");
+  var base = q > 0 ? s.substring(0, q) : s;
+  var mode = String(size || "").trim();
+  if (mode === "" || mode === "original") return base;
+  if (mode === "sv") return base + "?x-oss-process=image/resize,m_fill,h_200,w_200,limit_0/interlace,1/quality,q_95/format,jpg";
+  if (/^\d+$/.test(mode)) return base + "?x-oss-process=image/resize,m_fill,h_" + mode + ",w_" + mode;
+  return base;
+};
+
+SvPlugin.mapSong = function(item, request) {
   if (!item || !item.id) return null;
   var user = item.user || {};
   var albumObj = item.album || {};
@@ -21,7 +32,7 @@ SvPlugin.mapSong = function(item) {
     artist: String(user.username || user.name || ""),
     album: albumObj.name || "",
     duration: (Number(item.length) || 0) * 1000,
-    picUrl: SvPlugin.fullSizeUrl(item.image),
+    picUrl: SvPlugin.coverUrl(item.image, SvPlugin.getCoverSize(request)),
     date: (item.publish_at || item.created_at || "").substring(0, 10),
     trackNumber: "",
     discNumber: "",
@@ -41,7 +52,7 @@ function searchSongs(request) {
   if (!items || !items.length) return [];
   var songs = [];
   for (var i = 0; i < items.length; i++) {
-    var s = SvPlugin.mapSong(items[i]);
+    var s = SvPlugin.mapSong(items[i], request);
     if (s && s.id && s.title && s.artist) songs.push(s);
   }
   return songs;

@@ -1,3 +1,8 @@
 {
-  "plugin.description": "StreetVoice 歌词源：搜索、封面与歌词（公开 API，无需登录）"
+  "plugin.description": "StreetVoice 歌词源：搜索、封面与歌词（公开 API，无需登录）",
+  "group.cover": "封面",
+  "config.cover_size.title": "封面大小",
+  "config.cover_size.summary": "StreetVoice 封面裁切尺寸",
+  "config.cover_size.option.original": "原图",
+  "config.cover_size.option.sv": "StreetVoice 默认（200 × 200）"
 }

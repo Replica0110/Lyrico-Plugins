@@ -1,3 +1,8 @@
 {
-  "plugin.description": "StreetVoice lyrics source: search, covers and lyrics (public API, no account required)"
+  "plugin.description": "StreetVoice lyrics source: search, covers and lyrics (public API, no account required)",
+  "group.cover": "Artwork",
+  "config.cover_size.title": "Artwork size",
+  "config.cover_size.summary": "StreetVoice cover crop dimensions",
+  "config.cover_size.option.original": "Original",
+  "config.cover_size.option.sv": "StreetVoice default (200 × 200)"
 }

@@ -17,7 +17,35 @@
     "getLyrics",
     "searchCovers"
   ],
-  "configFields": [],
+  "configFields": [
+    {
+      "key": "cover_size",
+      "title": "@config.cover_size.title",
+      "summary": "@config.cover_size.summary",
+      "group": "@group.cover",
+      "type": "dropdown",
+      "required": true,
+      "defaultValue": "original",
+      "options": [
+        {
+          "value": "original",
+          "label": "@config.cover_size.option.original"
+        },
+        {
+          "value": "sv",
+          "label": "@config.cover_size.option.sv"
+        },
+        {
+          "value": "500",
+          "label": "500 × 500"
+        },
+        {
+          "value": "1000",
+          "label": "1000 × 1000"
+        }
+      ]
+    }
+  ],
   "i18n": {
     "defaultLocale": "en",
     "resources": {

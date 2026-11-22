@@ -164,3 +164,42 @@ test('StreetVoice searchCovers only returns songs with a cover URL', async () =>
   assert.equal(covers.length, 1);
   assert.equal(covers[0].id, '373284');
 });
+
+const COVER_IMG = SEARCH_RESULTS.results[0].image;
+const COVER_BASE = COVER_IMG.split('?')[0];
+
+test('StreetVoice cover_size default (original) strips all OSS params', async () => {
+  const { runtime: r } = await runtime();
+  r.context.Platform.http.getText = () => JSON.stringify(SEARCH_RESULTS);
+  const result = JSON.parse((await r.call('searchSongs', { keyword: 'hello' })).raw);
+  assert.equal(result[0].picUrl, COVER_BASE, 'default config.cover_size must return original with no query string');
+  assert.ok(!result[0].picUrl.includes('?'));
+});
+
+test('StreetVoice cover_size=sv keeps StreetVoice default 200x200 crop', async () => {
+  const { runtime: r } = await runtime();
+  r.context.Platform.http.getText = () => JSON.stringify(SEARCH_RESULTS);
+  const result = JSON.parse((await r.call('searchSongs', { keyword: 'hello', config: { cover_size: 'sv' } })).raw);
+  assert.equal(result[0].picUrl, COVER_BASE + '?x-oss-process=image/resize,m_fill,h_200,w_200,limit_0/interlace,1/quality,q_95/format,jpg');
+});
+
+test('StreetVoice cover_size=500 produces a 500x500 square crop URL', async () => {
+  const { runtime: r } = await runtime();
+  r.context.Platform.http.getText = () => JSON.stringify(SEARCH_RESULTS);
+  const result = JSON.parse((await r.call('searchSongs', { keyword: 'hello', config: { cover_size: '500' } })).raw);
+  assert.equal(result[0].picUrl, COVER_BASE + '?x-oss-process=image/resize,m_fill,h_500,w_500');
+});
+
+test('StreetVoice cover_size=1000 produces a 1000x1000 square crop URL', async () => {
+  const { runtime: r } = await runtime();
+  r.context.Platform.http.getText = () => JSON.stringify(SEARCH_RESULTS);
+  const result = JSON.parse((await r.call('searchSongs', { keyword: 'hello', config: { cover_size: '1000' } })).raw);
+  assert.equal(result[0].picUrl, COVER_BASE + '?x-oss-process=image/resize,m_fill,h_1000,w_1000');
+});
+
+test('StreetVoice cover_size invalid value falls back to original', async () => {
+  const { runtime: r } = await runtime();
+  r.context.Platform.http.getText = () => JSON.stringify(SEARCH_RESULTS);
+  const result = JSON.parse((await r.call('searchSongs', { keyword: 'hello', config: { cover_size: 'bogus' } })).raw);
+  assert.equal(result[0].picUrl, COVER_BASE);
+});
