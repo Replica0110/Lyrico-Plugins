@@ -1,6 +1,6 @@
 {
   "plugin.name": "Kuwo Music",
-  "plugin.description": "Kuwo Music source plugin ported from LDDC KwApi: word-by-word lyrics, album covers, release date enrichment\nContributor: LDDC",
+  "plugin.description": "Kuwo Music source plugin ported from LDDC KwApi: word-by-word lyrics, album covers, release date enrichment",
   "group.cover": "Cover",
   "group.metadata": "Metadata",
   "group.request": "Request",

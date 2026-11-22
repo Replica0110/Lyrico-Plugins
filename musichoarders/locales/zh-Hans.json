@@ -1,0 +1,8 @@
+{
+  "plugin.description": "COV 封面搜索（covers.musichoarders.xyz）：一次搜索聚合 25+ 流媒体、音乐商店与数据库的高质量专辑封面。仅封面源，不提供歌词。",
+  "group.search": "搜索",
+  "config.country.title": "国家/地区",
+  "config.country.summary": "封面查询使用的商店区（影响 Apple Music / iTunes / Amazon 的可用性）。若所选不可用则回退到美国。",
+  "config.sources.title": "来源（可选）",
+  "config.sources.summary": "以逗号分隔的来源 id，例如 tidal,qobuz,bandcamp。留空则使用精选默认集合（自动跳过其他已安装插件已覆盖的来源）。"
+}

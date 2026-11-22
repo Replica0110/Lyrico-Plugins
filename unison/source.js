@@ -29,7 +29,7 @@ function unisonMapSearch(item) {
       album: String(item.album || "")
     },
     internal: {
-      unison_video_id: String(item.videoId || "") || (song.title || "0000"),
+      unison_video_id: String(item.videoId || "") || "0000",
       unison_id: String(item.id || "")
     }
   };

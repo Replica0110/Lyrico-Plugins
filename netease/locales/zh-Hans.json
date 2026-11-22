@@ -1,6 +1,6 @@
 {
   "plugin.name": "网易云音乐",
-  "plugin.description": "网易云搜索源插件\n贡献者：BambooPanda92",
+  "plugin.description": "网易云搜索源插件",
   "config.comment_content.title": "注释写入内容",
   "group.metadata": "元数据",
   "config.comment_content.summary": "控制搜索结果写入注释字段的内容",

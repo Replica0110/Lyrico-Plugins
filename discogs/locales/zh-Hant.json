@@ -1,0 +1,13 @@
+{
+  "plugin.description": "Discogs 中繼資料來源：專輯封面、完整發行中繼資料（曲風、廠牌、條碼、目錄號、曲目列表）",
+  "config.user_token.title": "Discogs 個人存取權杖",
+  "group.auth": "認證",
+  "config.user_token.summary": "可選。在 https://www.discogs.com/settings/developers 建立，將匿名速率 25/分鐘提升至 60/分鐘",
+  "config.enrich_tracks.title": "補全曲目詳情",
+  "group.search": "搜尋",
+  "config.enrich_tracks.summary": "開啟時，每個匹配的發行會獲取完整詳情以填充曲目、曲風、廠牌、條碼等欄位。關閉則跳過詳情請求，僅返回搜尋預覽資料（中繼資料有限）",
+  "error.searchSongsFailed": "歌曲搜尋失敗：%1$s",
+  "error.searchCoversFailed": "封面搜尋失敗：%1$s",
+  "error.apiRateLimited": "Discogs 已達速率上限，請稍後再試或設定個人存取權杖",
+  "warn.detailFetchFailed": "Discogs 發行詳情獲取失敗 id=%1$s：%2$s"
+}

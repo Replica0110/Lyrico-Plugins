@@ -1,6 +1,6 @@
 {
   "plugin.name": "網易雲音樂",
-  "plugin.description": "網易雲搜尋來源外掛\n貢獻者：BambooPanda92",
+  "plugin.description": "網易雲搜尋來源外掛",
   "config.comment_content.title": "注釋寫入內容",
   "group.metadata": "中繼資料",
   "config.comment_content.summary": "控制搜尋結果寫入注釋欄位的內容",

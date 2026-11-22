@@ -18,7 +18,7 @@ function spotifySpDc(request) {
   return String(Lyrico.config(request, "sp_dc", "") || "").trim();
 }
 
-// ---------- crypto ----------
+// SHA1 (RFC 3174) / HMAC-SHA1 / TOTP (RFC 6238) — 纯 JS 实现
 function spotifySha1Bytes(bytes) {
   function rotl(x, n) { return ((x << n) | (x >>> (32 - n))) >>> 0; }
   var h0 = 0x67452301, h1 = 0xEFCDAB89, h2 = 0x98BADCFE, h3 = 0x10325476, h4 = 0xC3D2E1F0;
@@ -26,7 +26,7 @@ function spotifySha1Bytes(bytes) {
   var bitLen = msg.length * 8;
   msg.push(0x80);
   while (msg.length % 64 !== 56) msg.push(0);
-  // append length as 64-bit big-endian
+  // SHA1: 追加 bitLen 的 64-bit big-endian 表示（RFC 3174 §5.1）
   var hi = Math.floor(bitLen / 0x100000000);
   var lo = bitLen >>> 0;
   for (var i = 7; i >= 4; i--) msg.push((hi >>> (i * 8)) & 0xff);
@@ -86,7 +86,7 @@ function spotifyTotp(secretStr, timeMs) {
     counterBytes[i] = tmp & 0xff;
     tmp = Math.floor(tmp / 256);
   }
-  // ensure 8 bytes
+  // TOTP (RFC 6238): counter 必须是 8 字节 big-endian
   if (counterBytes.length !== 8) {
     var cb = [0,0,0,0,0,0,0,0];
     for (var i = 0; i < 8; i++) cb[i] = counterBytes[i] || 0;
@@ -104,7 +104,6 @@ function spotifyTotp(secretStr, timeMs) {
   return s;
 }
 
-// ---------- secrets ----------
 function spotifySecrets() {
   var cached = Lyrico.cacheGet("spotify.secrets.v1");
   if (cached && cached.secret && cached.version) return cached;
@@ -135,7 +134,6 @@ function spotifySecrets() {
   return out;
 }
 
-// ---------- auth ----------
 var spotifyClientIdHolder = "";
 
 function spotifyServerTimeMs(spDc) {
@@ -232,7 +230,6 @@ function spotifyClientToken(spDc) {
   return granted.token;
 }
 
-// ---------- search ----------
 function spotifySearchTrack(spDc, title, artist) {
   var accessToken = spotifyAccessToken(spDc);
   if (!accessToken) return null;
@@ -267,17 +264,34 @@ function spotifySearchTrack(spDc, title, artist) {
   return null;
 }
 
+// Spotify GraphQL returns image variants under coverArt.sources[] (real) and
+// historically under images[]. Pick the variant with the largest width.
+function spotifyLargestImage(sources) {
+  if (!Array.isArray(sources) || !sources.length) return "";
+  var best = "";
+  var bestW = -1;
+  for (var i = 0; i < sources.length; i++) {
+    var s = sources[i];
+    if (!s || !s.url) continue;
+    var w = s.width || 0;
+    if (w > bestW) { bestW = w; best = s.url; }
+  }
+  return best;
+}
+
 function spotifyParseSearch(json) {
   var data = json && json.data;
   if (!data) return null;
-  var searchV2 = data.searchV2;
   var items = null;
-  if (searchV2 && searchV2.tracks) items = searchV2.tracks.items;
-  if (!items && data.search && data.search.tracks) items = data.search.tracks.items;
+  // 0dff51c9 hash → data.searchV2.tracks ; 75bbf6bf hash → data.search.tracks
+  if (data.searchV2 && data.searchV2.tracks) items = data.searchV2.tracks.items;
+  else if (data.search && data.search.tracks) items = data.search.tracks.items;
   if (!Array.isArray(items) || !items.length) return null;
   for (var i = 0; i < items.length; i++) {
     var wrapper = items[i];
-    var node = (wrapper && wrapper.data) ? wrapper.data : wrapper;
+    if (!wrapper) continue;
+    // searchV2 wraps the track as items[i].data ; search wraps as items[i].track
+    var node = wrapper.data || wrapper.track || wrapper;
     if (!node) continue;
     var id = node.id || "";
     if (!id && node.uri && String(node.uri).indexOf("spotify:track:") === 0) {
@@ -286,41 +300,40 @@ function spotifyParseSearch(json) {
     if (!id) continue;
     var title = node.name || "";
     var artists = [];
-    if (Array.isArray(node.artists)) {
-      for (var a = 0; a < node.artists.length; a++) {
-        var ar = node.artists[a];
-        var name = (ar && (ar.name || (ar.profile && ar.profile.name))) || "";
-        if (name) artists.push(name);
+    var artistsRaw = node.artists;
+    // real: artists: { items: [{ profile: { name } }] } ; some: artists: [{ name }]
+    if (artistsRaw && Array.isArray(artistsRaw.items)) {
+      for (var ai = 0; ai < artistsRaw.items.length; ai++) {
+        var it = artistsRaw.items[ai];
+        var nm = (it && (it.name || (it.profile && it.profile.name))) || "";
+        if (nm) artists.push(nm);
+      }
+    } else if (Array.isArray(artistsRaw)) {
+      for (var a2 = 0; a2 < artistsRaw.length; a2++) {
+        var ar2 = artistsRaw[a2];
+        var name2 = (ar2 && (ar2.name || (ar2.profile && ar2.profile.name))) || "";
+        if (name2) artists.push(name2);
       }
     }
     if (!artists.length && node.artist) artists.push(String(node.artist));
     var album = "";
     var albumCover = "";
-    if (node.albumOf && node.albumOf) {
-      var albumNode = node.albumOf;
+    var albumNode = node.album || node.albumOf;
+    if (albumNode) {
       album = albumNode.name || "";
-      if (Array.isArray(albumNode.images) && albumNode.images.length > 0) {
-        var largest = albumNode.images.reduce(function (max, img) {
-          return (img.width || 0) > (max.width || 0) ? img : max;
-        }, { width: 0 });
-        albumCover = largest.url || "";
-      }
-    } else if (node.album && node.album) {
-      var albumNode = node.album;
-      album = albumNode.name || "";
-      if (Array.isArray(albumNode.images) && albumNode.images.length > 0) {
-        var largest = albumNode.images.reduce(function (max, img) {
-          return (img.width || 0) > (max.width || 0) ? img : max;
-        }, { width: 0 });
-        albumCover = largest.url || "";
-      }
+      // real: coverArt.sources[] ; legacy fallback: images[]
+      var sources = (albumNode.coverArt && albumNode.coverArt.sources) || albumNode.images;
+      albumCover = spotifyLargestImage(sources);
     }
-    return { id: id, title: title, artists: artists, album: album, cover: albumCover };
+    var duration = 0;
+    if (node.duration && node.duration.totalMilliseconds) {
+      duration = Number(node.duration.totalMilliseconds) || 0;
+    }
+    return { id: id, title: title, artists: artists, album: album, cover: albumCover, duration: duration };
   }
   return null;
 }
 
-// ---------- lyrics ----------
 function spotifyParseStartTimeMs(obj) {
   var raw = obj && obj.startTimeMs;
   if (raw === undefined || raw === null || raw === "") return 0;
@@ -410,7 +423,6 @@ function spotifyFetchLyrics(spDc, trackId) {
   return Lyrico.parseJson(text);
 }
 
-// ---------- plugin API ----------
 function searchSongs(request) {
   request = request || {};
   var spDc = spotifySpDc(request);
@@ -428,7 +440,7 @@ function searchSongs(request) {
     title: hit.title || queryTitle,
     artist: (hit.artists || []).join(" / ") || queryArtist,
     album: hit.album || "",
-    duration: 0,
+    duration: hit.duration || 0,
     date: "",
     picUrl: hit.cover || "",
     fields: {
@@ -478,10 +490,7 @@ function getLyrics(request) {
   }
   var requestedSong = request.song || {};
   var songs = requestedSong.title ? [requestedSong] : [];
-  if (!songs.length && request.keyword) {
-    // Try iTunes catalog to obtain a title/artist pair.
-    songs = [];
-  }
+  if (!songs.length && request.keyword) songs = []; // TODO: 从 iTunes 获取 title/artist
 
   var candidates = [];
   for (var i = 0; i < songs.length; i++) {

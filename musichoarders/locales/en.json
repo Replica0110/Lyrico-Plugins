@@ -1,0 +1,8 @@
+{
+  "plugin.description": "COV cover search (covers.musichoarders.xyz): aggregates high-quality album covers from 25+ streaming services, stores and databases in one search. Cover-only source, no lyrics.",
+  "group.search": "Search",
+  "config.country.title": "Country",
+  "config.country.summary": "Storefront country used for cover lookup (affects Apple Music / iTunes / Amazon availability). Defaults to US if your choice is unavailable.",
+  "config.sources.title": "Sources (optional)",
+  "config.sources.summary": "Comma-separated source ids to query, e.g. tidal,qobuz,bandcamp. Leave empty to use the curated default set (skips sources already covered by other installed plugins)."
+}

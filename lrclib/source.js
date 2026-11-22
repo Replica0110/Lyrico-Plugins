@@ -24,7 +24,7 @@ function lrclibMapSong(item) {
     date: date,
     fields: fields,
     internal: {
-      lrclib_id: String(item.id || "") || (song.title || "0000"),
+      lrclib_id: String(item.id || "") || "0000",
       has_word_sync: item.hasWordSync ? "1" : "",
       instrumental: item.instrumental ? "1" : ""
     }
@@ -47,7 +47,7 @@ function lrclibSearch(request) {
   }
 
   var url = LRCLIB_BASE + "search?" + Lyrico.buildQuery(params);
-  Lyrico.log(LRCLIB_TAG || (song.title || "0000"), "search " + url);
+  Lyrico.log(LRCLIB_TAG, "search " + url);
   var root = Lyrico.getJson(url, {
     headers: { "Accept": "application/json" },
     readTimeoutMs: 20000

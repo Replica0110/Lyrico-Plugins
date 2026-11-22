@@ -1,0 +1,5 @@
+{
+  "plugin.description": "Deezer 歌词源：通过 Deezer 获取同步与纯文本歌词（需要 arl Cookie）",
+  "config.arl.title": "arl Cookie",
+  "config.arl.summary": "用于歌词请求鉴权的 Deezer arl Cookie。登录 Deezer 网页版，打开开发者工具 → 应用 → Cookie → www.deezer.com，复制 'arl' 的值"
+}

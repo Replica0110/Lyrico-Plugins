@@ -265,32 +265,27 @@ function petitCollectTier(response, stash) {
   }
 }
 
-// ---------- title cleaning ----------
+// 清洗标题：统一分隔符后，剥离末尾的纯 ASCII 罗马音/英文名段落
 function petitCleanTitle(rawTitle) {
   var text = String(rawTitle || "").trim();
   if (!text) return "";
 
-  // 统一常见分隔符为 ASCII " - "
   text = text.replace(/\s*[-—–]\s*/g, " - ");
   text = text.replace(/\s*[／/]\s*/g, " - ");
   text = text.replace(/\s*〜\s*/g, " - ");
   text = text.replace(/\s*\~\s*/g, " - ");
 
-  // 尝试按分隔符切分，寻找一个由 ASCII 纯字母（或字母+空格）组成的尾部
   var parts = text.split(" - ");
   if (parts.length < 2) return text;
 
   var cleaned = parts[0];
   for (var i = 1; i < parts.length; i++) {
     var tail = parts[i].trim();
-    // 空段、纯括号或纯英文/拼音 → 跳过
     if (!tail) continue;
     if (/^\(.*\)$/.test(tail) || /^\[.*\]$/.test(tail)) continue;
-    // 纯 ASCII 字母、数字、空格、括号 → 视为罗马音/英文名
     if (/^[\x20-\x7E]+$/.test(tail)) {
       continue;
     }
-    // 含中文/日文非 ASCII 字符 → 认为是标题本体的一部分，保留
     cleaned = cleaned + " - " + tail;
   }
   return cleaned.trim();

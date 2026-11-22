@@ -66,7 +66,7 @@ function searchSongs(request) {
     });
   } catch (e) {
     const msg = String(e && e.message || "");
-    // 如果是 401 错误且 token 是自动获取的（非用户配置的），则重试一次
+    // guest token 401 → 失效重取重试
     if (usesGuestToken && msg.indexOf("状态码 401") >= 0) {
       invalidateMxmToken();
       token = ensureMxmToken(request);
@@ -214,7 +214,7 @@ function getLyricsForSong(request, song) {
     macroRoot = mxmGet("macro.subtitles.get", mxmMacroParams(song, token));
   } catch (e) {
     const msg = String(e && e.message || "");
-    // 如果是 401 错误且 token 是自动获取的（非用户配置的），则重试一次
+    // guest token 401 → 失效重取重试
     if (usesGuestToken && msg.indexOf("状态码 401") >= 0) {
       invalidateMxmToken();
       token = ensureMxmToken(request);
@@ -247,7 +247,7 @@ function getLyricsForSong(request, song) {
   if (!original || !original.length) {
     if (!originalLrc) return null;
     original = parseLrc(originalLrc);
-    // 逐行模式：把每行合并成单个文本，避免宿主把单个“词”误判为逐字歌词。
+    // line 模式：每行合并成纯文本，防宿主把单词误判为逐字同步
     if (lyricsMode === "line") {
       original = original.map(function (line) {
         return [line[0], line[1], extractLineText(line)];
