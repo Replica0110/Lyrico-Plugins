@@ -1,0 +1,13 @@
+{
+  "plugin.description": "Discogs 元数据源：专辑封面、完整发行元数据（流派、厂牌、条形码、目录号、曲目列表）",
+  "config.user_token.title": "Discogs 个人访问令牌",
+  "group.auth": "认证",
+  "config.user_token.summary": "可选。在 https://www.discogs.com/settings/developers 创建，将匿名速率 25/分钟提升至 60/分钟",
+  "config.enrich_tracks.title": "补全曲目详情",
+  "group.search": "搜索",
+  "config.enrich_tracks.summary": "开启时，每个匹配的发行会获取完整详情以填充曲目、流派、厂牌、条形码等字段。关闭则跳过详情请求，仅返回搜索预览数据（元数据有限）",
+  "error.searchSongsFailed": "歌曲搜索失败：%1$s",
+  "error.searchCoversFailed": "封面搜索失败：%1$s",
+  "error.apiRateLimited": "Discogs 已达速率上限，请稍后再试或配置个人访问令牌",
+  "warn.detailFetchFailed": "Discogs 发行详情获取失败 id=%1$s：%2$s"
+}

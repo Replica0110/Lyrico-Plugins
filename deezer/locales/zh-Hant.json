@@ -1,0 +1,5 @@
+{
+  "plugin.description": "Deezer 歌詞源：透過 Deezer 獲取同步與純文字歌詞（需要 arl Cookie）",
+  "config.arl.title": "arl Cookie",
+  "config.arl.summary": "用於歌詞請求鑑權的 Deezer arl Cookie。登入 Deezer 網頁版，打開開發者工具 → 應用 → Cookie → www.deezer.com，複製 'arl' 的值"
+}

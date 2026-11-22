@@ -1,6 +1,6 @@
 {
   "plugin.name": "酷我音乐",
-  "plugin.description": "酷我音乐搜索源插件，协议移植自 LDDC 的 KwApi：逐字歌词、专辑封面、发行日期补全\n贡献者：LDDC",
+  "plugin.description": "酷我音乐搜索源插件，协议移植自 LDDC 的 KwApi：逐字歌词、专辑封面、发行日期补全",
   "group.cover": "封面",
   "group.metadata": "元数据",
   "group.request": "请求",

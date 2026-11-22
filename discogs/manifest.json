@@ -1,0 +1,41 @@
+{
+  "id": "com.discogs.source",
+  "name": "Discogs",
+  "versionCode": 1,
+  "versionName": "1.0.0",
+  "author": "BingoKingo",
+  "description": "@plugin.description",
+  "apiVersion": 5,
+  "minHostApiVersion": 4,
+  "entry": "source.js",
+  "includeDirs": [],
+  "icon": "icon.png",
+  "capabilities": [
+    "searchSongs",
+    "searchCovers"
+  ],
+  "configFields": [
+    {
+      "key": "user_token",
+      "title": "@config.user_token.title",
+      "summary": "@config.user_token.summary",
+      "type": "password",
+      "defaultValue": ""
+    },
+    {
+      "key": "enrich_tracks",
+      "title": "@config.enrich_tracks.title",
+      "summary": "@config.enrich_tracks.summary",
+      "type": "switch",
+      "defaultValue": "true"
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "resources": {
+      "en": "locales/en.json",
+      "zh-Hans": "locales/zh-Hans.json",
+      "zh-Hant": "locales/zh-Hant.json"
+    }
+  }
+}

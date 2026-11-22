@@ -1,6 +1,6 @@
 {
   "plugin.name": "NetEase Cloud Music",
-  "plugin.description": "NetEase Cloud Music search source plugin\nContributors: BambooPanda92",
+  "plugin.description": "NetEase Cloud Music search source plugin",
   "config.comment_content.title": "Comment content",
   "group.metadata": "Metadata",
   "config.comment_content.summary": "Content written into the comment field by search results",

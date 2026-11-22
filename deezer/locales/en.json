@@ -1,0 +1,5 @@
+{
+  "plugin.description": "Deezer lyrics source: synced and plain lyrics via Deezer (requires arl cookie)",
+  "config.arl.title": "arl cookie",
+  "config.arl.summary": "Deezer arl cookie used to authenticate lyrics requests. Log into Deezer web, open DevTools → Application → Cookies → www.deezer.com, copy the value of 'arl'"
+}

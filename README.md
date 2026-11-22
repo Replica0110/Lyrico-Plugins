@@ -30,10 +30,13 @@ https://github.com/Replica0110/Lyrico-Plugins/releases/latest/download/catalog.j
 | Unison | ✓ | ✓ | — |
 | SimpMusic | ✓ | ✓ | — |
 | LunaBeat | ✓ | ✓ | — |
-| Binimum | — | ✓ | — |
 | lrc.red | ✓ | ✓ | ✓ |
 | PetitLyrics | — | ✓ | — |
-| Spotify | ✓ | ✓ | — |
+| Spotify | ✓ | ✓ | ✓ |
+| Discogs | ✓ | — | ✓ |
+| Deezer | ✓ | ✓ | ✓ |
+| StreetVoice | ✓ | ✓ | ✓ |
+| COV (MusicHoarders) | — | — | ✓ |
 
 ## 本地导入
 

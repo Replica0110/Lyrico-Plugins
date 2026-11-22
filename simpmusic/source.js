@@ -61,7 +61,7 @@ function simpmusicFetchEntries(videoId) {
 
 function simpmusicPickEntry(entries) {
   if (!entries || !entries.length) return null;
-  // Prefer richSyncLyrics, then syncedLyrics with highest vote.
+  // 选最佳：优先 richSyncLyrics，其次投票最高的 syncedLyrics
   var best = null, bestScore = -9999;
   for (var i = 0; i < entries.length; i++) {
     var e = entries[i] || {};

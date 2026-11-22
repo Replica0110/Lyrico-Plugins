@@ -1,0 +1,59 @@
+{
+  "id": "com.musichoarders.cov.source",
+  "name": "COV (MusicHoarders)",
+  "versionCode": 1,
+  "versionName": "1.0.0",
+  "author": "BingoKingo",
+  "description": "@plugin.description",
+  "apiVersion": 5,
+  "minHostApiVersion": 4,
+  "includeDirs": [
+    "lib"
+  ],
+  "icon": "icon.png",
+  "entry": "source.js",
+  "capabilities": [
+    "searchCovers"
+  ],
+  "configFields": [
+    {
+      "key": "country",
+      "title": "@config.country.title",
+      "summary": "@config.country.summary",
+      "group": "@group.search",
+      "type": "dropdown",
+      "defaultValue": "us",
+      "options": [
+        { "value": "us", "label": "United States" },
+        { "value": "jp", "label": "Japan" },
+        { "value": "kr", "label": "South Korea" },
+        { "value": "cn", "label": "China" },
+        { "value": "tw", "label": "Taiwan" },
+        { "value": "hk", "label": "Hong Kong" },
+        { "value": "gb", "label": "United Kingdom" },
+        { "value": "de", "label": "Germany" },
+        { "value": "fr", "label": "France" },
+        { "value": "ca", "label": "Canada" },
+        { "value": "au", "label": "Australia" },
+        { "value": "br", "label": "Brazil" }
+      ]
+    },
+    {
+      "key": "sources",
+      "title": "@config.sources.title",
+      "summary": "@config.sources.summary",
+      "group": "@group.search",
+      "type": "text",
+      "defaultValue": ""
+    }
+  ],
+  "i18n": {
+    "defaultLocale": "en",
+    "resources": {
+      "en": "locales/en.json",
+      "zh-Hans": "locales/zh-Hans.json",
+      "zh-Hant": "locales/zh-Hant.json"
+    }
+  },
+  "updateUrl": "https://github.com/Replica0110/Lyrico-Plugins/releases/latest/download/catalog.json"
+}

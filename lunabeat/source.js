@@ -28,7 +28,7 @@ function lunabeatMapSearch(item) {
     duration: 0,
     date: "",
     fields: { title: String(item.title || ""), artist: artist, album: album },
-    internal: { lunabeat_id: String(item.id || "") || (song.title || "0000"), lunabeat_path: String(item.path || "") }
+    internal: { lunabeat_id: String(item.id || "") || "0000", lunabeat_path: String(item.path || "") }
   };
 }
 
@@ -76,7 +76,7 @@ function lunabeatFind(request, song) {
     keyword: request && request.keyword
   });
   if (!items.length) return null;
-  // Re-find original index entry to get path
+  // 从索引里反查完整 path
   var songs = lunabeatLoadIndex();
   for (var i = 0; i < items.length; i++) {
     if (Lyrico.normalize(items[i].title) === Lyrico.normalize(song.title)) {

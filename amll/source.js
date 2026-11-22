@@ -11,24 +11,21 @@ function amllSearch(request) {
     if (artist) params.artistName = artist;
   } else if (keyword) {
     params.musicName = keyword;
-    // 若可能同时包含艺名与歌名（空格分隔），尝试粗略分割，但仅在初次结果为空时再尝试
     var parts = Lyrico.normalize(keyword).split(/\s+/);
     if (parts.length >= 2) {
-      // 构造备用的 artistName/musicName 组合
       params._split_artist = parts[0];
       params._split_music = parts.slice(1).join(" ");
     }
   } else {
     return [];
   }
-  // 首先尝试基础查询
   var url = AMLL_BASE + "/search?" + Lyrico.buildQuery(params);
   Lyrico.log(AMLL_TAG, "search " + url);
   var root = Lyrico.getJson(url, { headers: { "Accept": "application/json" }, readTimeoutMs: 20000 });
   var data = root && root.data ? root.data : {};
   var items = Array.isArray(data.items) ? data.items : [];
 
-  // 若初次查询为空且存在备用分割参数，再尝试分割后的查询
+  // 基础查询为空则用空格分割 keyword 再查一次
   if (!items.length && params._split_music && params._split_artist) {
     var altParams = {
       artistName: params._split_artist,
@@ -58,7 +55,7 @@ function amllMapSearch(item) {
     duration: 0,
     date: "",
     fields: { title: title, artist: artist, album: album },
-    internal: { amll_id: String(item.id || "") || (song.title || "0000"), isrc: Array.isArray(item.isrcs) ? item.isrcs.join("/") : "" }
+    internal: { amll_id: String(item.id || "") || "0000", isrc: Array.isArray(item.isrcs) ? item.isrcs.join("/") : "" }
   };
 }
 

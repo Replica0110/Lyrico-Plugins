@@ -1,0 +1,13 @@
+{
+  "plugin.description": "Discogs metadata source: album artwork, full release metadata including genres, labels, barcodes, catalog numbers, and tracklist",
+  "config.user_token.title": "Discogs personal access token",
+  "group.auth": "Authentication",
+  "config.user_token.summary": "Optional. Create one at https://www.discogs.com/settings/developers to lift the anonymous rate limit of 25/min to 60/min",
+  "config.enrich_tracks.title": "Enrich tracks",
+  "group.search": "Search",
+  "config.enrich_tracks.summary": "When enabled, each matched release is fetched in full so tracks, genres, labels and barcodes are populated. Disable to skip the detail request and return only search-preview data (limited metadata)",
+  "error.searchSongsFailed": "Song search failed: %1$s",
+  "error.searchCoversFailed": "Artwork search failed: %1$s",
+  "error.apiRateLimited": "Discogs rate limit reached, please try again later or configure a personal access token",
+  "warn.detailFetchFailed": "Discogs release detail fetch failed for id=%1$s: %2$s"
+}
